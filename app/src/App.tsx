@@ -93,7 +93,7 @@ function AppShell() {
 
   return (
     <NavCtx.Provider value={ctxVal}>
-      <div className="nb-shell">
+      <div>
         <div className="nb-scroll" key={`${screen}:${history.length}`}>
           <div
             className={direction === "back" ? "nb-screen-back" : "nb-screen-in"}
@@ -118,7 +118,14 @@ export function App() {
 
   if (isPending) {
     return (
-      <div className="nb-shell" style={{ display: "flex", alignItems: "center", justifyContent: "center", background: T.cream }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: T.cream,
+        }}
+      >
         <div style={{ fontSize: 32 }}>👶</div>
       </div>
     );
@@ -126,7 +133,7 @@ export function App() {
 
   if (!session) {
     return (
-      <div className="nb-shell">
+      <div>
         <div className="nb-scroll">
           <LoginScreen />
         </div>
