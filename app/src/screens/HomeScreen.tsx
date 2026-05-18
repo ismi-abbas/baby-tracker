@@ -1,0 +1,209 @@
+import React, { useEffect, useState } from 'react';
+import { T, fonts } from '../tokens';
+import { Card, Chip, SyncBadge, TabBar, fmtDuration, fmtTimeAgo, useNav } from '../components/ui';
+import { I } from '../components/Icons';
+import { api } from '../api/client';
+import type { TodayStats, Feeding, DiaperChange, Sleep } from '../types';
+
+function useRecentActivities() {
+  const [feeds, setFeeds] = useState<Feeding[]>([]);
+  const [diapers, setDiapers] = useState<DiaperChange[]>([]);
+  const [sleeps, setSleeps] = useState<Sleep[]>([]);
+
+  useEffect(() => {
+    (api.feedings.list(3) as Promise<Feeding[]>).then(setFeeds).catch(() => {});
+    (api.diapers.list(3) as Promise<DiaperChange[]>).then(setDiapers).catch(() => {});
+    (api.sleeps.list(3) as Promise<Sleep[]>).then(setSleeps).catch(() => {});
+  }, []);
+
+  type Activity = { icon: React.ReactNode; color: string; soft: string; title: string; sub: string; by: string; time: string };
+  const activities: Activity[] = [
+    ...feeds.slice(0, 2).map(f => ({
+      icon: I.feed, color: T.terracotta, soft: T.terracottaSoft,
+      title: f.type === 'breast' ? `Breastfed · ${f.side === 'left' ? 'Left' : f.side === 'right' ? 'Right' : 'Both'} side` : `Bottle feed`,
+      sub: f.durationSeconds ? `${fmtDuration(f.durationSeconds)}` : f.amountMl ? `${f.amountMl} ml` : '',
+      by: f.loggedBy ?? 'You',
+      time: f.startedAt,
+    })),
+    ...diapers.slice(0, 1).map(d => ({
+      icon: I.diaper, color: T.earth, soft: T.earthSoft,
+      title: d.type === 'dirty' ? 'Dirty diaper' : d.type === 'wet' ? 'Wet diaper' : 'Mixed diaper',
+      sub: d.consistency ?? '',
+      by: d.loggedBy ?? 'You',
+      time: d.changedAt,
+    })),
+    ...sleeps.slice(0, 1).map(s => ({
+      icon: I.sleep, color: T.sage, soft: T.sageSoft,
+      title: s.endedAt ? 'Nap ended' : 'Sleeping',
+      sub: s.durationSeconds ? fmtDuration(s.durationSeconds) : 'ongoing',
+      by: s.loggedBy ?? 'You',
+      time: s.startedAt,
+    })),
+  ].sort((a, b) => b.time.localeCompare(a.time)).slice(0, 3);
+
+  return activities;
+}
+
+export function HomeScreen() {
+  const [stats, setStats] = useState<TodayStats | null>(null);
+  const { nav } = useNav();
+  const activities = useRecentActivities();
+
+  useEffect(() => {
+    (api.stats.today() as Promise<TodayStats>).then(setStats).catch(() => {});
+  }, []);
+
+  const today = new Date();
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const dateStr = `${days[today.getDay()]} · ${months[today.getMonth()]} ${today.getDate()}`;
+
+  const feedCount = stats?.feedCount ?? 0;
+  const sleepSec = stats?.totalSleepSeconds ?? 0;
+  const pumpedMl = stats?.totalPumpedMl ?? 0;
+  const diaperCount = stats?.diaperCount ?? 0;
+
+  return (
+    <div style={{
+      width: '100%', minHeight: '100%', background: T.cream,
+      fontFamily: fonts.sans, display: 'flex', flexDirection: 'column',
+      paddingTop: 'max(20px, env(safe-area-inset-top))', boxSizing: 'border-box',
+    }}>
+      {/* Header */}
+      <div style={{ padding: '8px 22px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ color: T.inkMute, fontSize: 12.5, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+            {dateStr}
+          </div>
+          <div style={{ fontFamily: fonts.serif, fontSize: 30, color: T.ink, lineHeight: 1.05, marginTop: 2, letterSpacing: -0.5 }}>
+            Good {today.getHours() < 12 ? 'morning' : today.getHours() < 18 ? 'afternoon' : 'evening'},<br/>
+            <span style={{ fontStyle: 'italic', color: T.terracotta }}>Saif</span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: 22, background: T.terracottaSoft,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: fonts.serif, fontSize: 18, color: T.terracotta, fontWeight: 600,
+            border: `2px solid ${T.card}`,
+          }}>S</div>
+          <SyncBadge />
+        </div>
+      </div>
+
+      {/* Baby card */}
+      <div style={{ padding: '20px 16px 0' }}>
+        <Card pad={0} style={{ overflow: 'hidden' }}>
+          <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{
+              width: 52, height: 52, borderRadius: 26,
+              background: `linear-gradient(135deg, ${T.terracottaSoft}, ${T.honeySoft})`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 22,
+            }}>👶</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: T.ink }}>Saif Hakimi</div>
+              <div style={{ fontSize: 12.5, color: T.inkSoft, marginTop: 1 }}>
+                12 weeks · {stats?.activeSleep ? '😴 sleeping' : '👀 awake'}
+              </div>
+            </div>
+            <Chip color={stats?.activeSleep ? T.sage : T.terracotta} soft={stats?.activeSleep ? T.sageSoft : T.terracottaSoft}>
+              {stats?.activeSleep ? '● Asleep' : '● Awake'}
+            </Chip>
+          </div>
+        </Card>
+      </div>
+
+      {/* Today stats */}
+      <div style={{ padding: '14px 16px 0' }}>
+        <Card pad={18}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: T.ink, letterSpacing: 0.2 }}>TODAY SO FAR</div>
+            <div style={{ fontSize: 11, color: T.inkMute }}>since midnight</div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+            {[
+              ['Feeds', String(feedCount), T.terracotta, '/ 8 goal'],
+              ['Diapers', String(diaperCount), T.earth, `${stats?.wetDiapers ?? 0} wet`],
+              ['Sleep', sleepSec > 0 ? fmtDuration(sleepSec).replace(' ', '') : '—', T.sage, `${stats?.sleepCount ?? 0} naps`],
+              ['Pumped', pumpedMl > 0 ? String(pumpedMl) : '—', T.honey, 'ml'],
+            ].map(([label, val, col, sub]) => (
+              <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                <div style={{ fontSize: 10.5, color: T.inkMute, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.4, whiteSpace: 'nowrap' }}>{label}</div>
+                <div style={{ fontFamily: fonts.serif, fontSize: 22, color: col, fontWeight: 600, lineHeight: 1.05, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{val}</div>
+                <div style={{ fontSize: 10.5, color: T.inkMute, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* Last activity */}
+      {activities.length > 0 && (
+        <div style={{ padding: '14px 16px 0' }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: T.inkSoft, letterSpacing: 0.6, textTransform: 'uppercase', padding: '0 6px 8px' }}>Last activity</div>
+          <Card pad={0}>
+            {activities.map((row, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
+                borderTop: i ? `1px solid ${T.rule}` : 'none',
+              }}>
+                <div style={{ width: 36, height: 36, borderRadius: 11, background: row.soft, color: row.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: 20, height: 20 }}>{row.icon}</div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: T.ink }}>{row.title}</div>
+                  <div style={{ fontSize: 11.5, color: T.inkMute, marginTop: 1 }}>{row.sub && `${row.sub} · `}{fmtTimeAgo(row.time)}</div>
+                </div>
+                <div style={{ fontSize: 10.5, color: T.inkMute, padding: '2px 8px', borderRadius: 999, background: 'rgba(0,0,0,0.03)', fontWeight: 600 }}>
+                  by {row.by}
+                </div>
+              </div>
+            ))}
+          </Card>
+        </div>
+      )}
+
+      {/* Next feed reminder */}
+      {stats?.lastFeed && (
+        <div style={{ padding: '14px 16px 0' }}>
+          <div style={{
+            background: T.honeySoft, borderRadius: 18, padding: '12px 14px',
+            display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <div style={{ width: 20, height: 20, color: T.honey, flexShrink: 0 }}>{I.bell}</div>
+            <div style={{ flex: 1, fontSize: 12.5, color: '#7C5A21', lineHeight: 1.35 }}>
+              Last feed was {fmtTimeAgo(stats.lastFeed.startedAt)} — watch for hunger cues soon
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick actions */}
+      <div style={{ padding: '14px 16px 0', display: 'flex', gap: 10 }}>
+        <button onClick={() => nav('timeline')} style={{
+          flex: 1, padding: '12px 14px', borderRadius: 16,
+          background: T.card, border: `1px solid ${T.rule}`,
+          display: 'flex', alignItems: 'center', gap: 8,
+          fontFamily: fonts.sans, fontSize: 13, fontWeight: 600, color: T.ink,
+          cursor: 'pointer',
+        }}>
+          <div style={{ width: 16, height: 16, color: T.inkMute }}>{I.timeline}</div>
+          Timeline
+        </button>
+        <button onClick={() => nav('insights')} style={{
+          flex: 1, padding: '12px 14px', borderRadius: 16,
+          background: T.card, border: `1px solid ${T.rule}`,
+          display: 'flex', alignItems: 'center', gap: 8,
+          fontFamily: fonts.sans, fontSize: 13, fontWeight: 600, color: T.ink,
+          cursor: 'pointer',
+        }}>
+          <div style={{ width: 16, height: 16, color: T.inkMute }}>{I.insights}</div>
+          Insights
+        </button>
+      </div>
+
+      <TabBar />
+    </div>
+  );
+}

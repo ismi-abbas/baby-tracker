@@ -1,0 +1,12 @@
+name = "baby-tracker-api"
+main = "src/index.ts"
+compatibility_date = "2025-05-18"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "baby-tracker"
+database_id = "placeholder-run-wrangler-d1-create-baby-tracker"
+
+[dev]
+port = 8787
