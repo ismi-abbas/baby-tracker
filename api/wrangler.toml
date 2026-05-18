@@ -6,7 +6,10 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "baby-tracker"
-database_id = "placeholder-run-wrangler-d1-create-baby-tracker"
+database_id = "b8407f98-e29f-4a28-9a0d-57f10525fb92"
+
+[vars]
+BETTER_AUTH_URL = "https://baby-tracker-api.abbaspuzi-dev.workers.dev"
 
 [dev]
 port = 8787
