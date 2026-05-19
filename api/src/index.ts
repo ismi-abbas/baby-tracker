@@ -562,9 +562,11 @@ app.put("/api/babies/:babyId/visits/:id", async (c) => {
 app.get("/api/babies/:babyId/timeline", async (c) => {
   const db = getDb(c.env.DATABASE_URL);
   const babyId = c.req.param("babyId");
+  const tzOffset = parseInt(c.req.query("tz") ?? "0"); // minutes ahead of UTC (e.g. +480 for UTC+8)
   const date = c.req.query("date") ?? new Date().toISOString().slice(0, 10);
-  const dayStart = `${date}T00:00:00.000Z`;
-  const dayEnd = `${date}T23:59:59.999Z`;
+  // Shift UTC day window by timezone offset so local midnight-to-midnight is covered
+  const dayStart = new Date(new Date(`${date}T00:00:00.000Z`).getTime() - tzOffset * 60000).toISOString();
+  const dayEnd   = new Date(new Date(`${date}T23:59:59.999Z`).getTime() - tzOffset * 60000).toISOString();
 
   const [feedRows, sleepRows, pumpRows, diaperRows, bathRows] = await Promise.all([
     db
