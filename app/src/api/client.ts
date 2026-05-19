@@ -84,7 +84,7 @@ export function createBabyApi(babyId: string) {
       create: (data: unknown)             => post(`/babies/${b}/visits`, data),
     },
     stats: {
-      today:  ()                          => get(`/babies/${b}/stats/today`),
+      today:  (from?: string)             => get(`/babies/${b}/stats/today${from ? `?from=${encodeURIComponent(from)}` : ''}`),
       weekly: ()                          => get(`/babies/${b}/stats/weekly`),
     },
     timeline: {

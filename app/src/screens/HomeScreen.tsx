@@ -52,7 +52,9 @@ export function HomeScreen() {
 
   useEffect(() => {
     if (!baby) return;
-    (babyApi.stats.today() as Promise<TodayStats>).then(setStats).catch(() => {});
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    (babyApi.stats.today(start.toISOString()) as Promise<TodayStats>).then(setStats).catch(() => {});
   }, [baby, babyApi]);
 
   const today = new Date();

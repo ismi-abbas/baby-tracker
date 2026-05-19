@@ -640,7 +640,7 @@ app.get("/api/babies/:babyId/timeline", async (c) => {
 app.get("/api/babies/:babyId/stats/today", async (c) => {
   const db = getDb(c.env.DATABASE_URL);
   const babyId = c.req.param("babyId");
-  const start = todayStart();
+  const start = c.req.query("from") ?? todayStart();
 
   const [feedRows, sleepRows, pumpRows, diaperRows] = await Promise.all([
     db
