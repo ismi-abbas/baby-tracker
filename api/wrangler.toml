@@ -4,7 +4,7 @@ compatibility_date = "2025-05-19"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-BETTER_AUTH_URL = "https://baby-tracker-api.abbaspuzi-dev.workers.dev"
+BETTER_AUTH_URL = "https://baby-tracker-api.abbaspuzi-dev.workers.dev/api"
 FRONTEND_URL = "https://baby-tracker.abbaspuzi-dev.workers.dev"
 
 # Secrets (set via wrangler secret put):
@@ -15,3 +15,18 @@ FRONTEND_URL = "https://baby-tracker.abbaspuzi-dev.workers.dev"
 
 [dev]
 port = 8787
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1
