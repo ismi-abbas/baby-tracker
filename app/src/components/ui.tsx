@@ -1,26 +1,53 @@
 import React, { createContext, useContext, useCallback, useMemo, useState, useEffect } from 'react';
+import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { T, fonts } from '../tokens';
 import { I } from './Icons';
 import type { Screen } from '../types';
 
-// ─── Nav Context ─────────────────────────────────────────────────
+// ─── Route map ───────────────────────────────────────────────────
 
-interface NavContextValue {
-  nav: (screen: Screen) => void;
-  back: () => void;
-  screen: Screen;
-  openSheet: () => void;
-}
+const TABS = new Set<Screen>(['home', 'timeline', 'growth-chart', 'profile']);
 
-export const NavCtx = createContext<NavContextValue>({
-  nav: () => {},
-  back: () => {},
-  screen: 'home',
-  openSheet: () => {},
-});
+export const SCREEN_PATHS: Record<Screen, string> = {
+  home:           '/',
+  timeline:       '/timeline',
+  'growth-chart': '/growth',
+  profile:        '/profile',
+  insights:       '/insights',
+  feeding:        '/log/feeding',
+  bottle:         '/log/feeding',
+  sleep:          '/log/sleep',
+  pumping:        '/log/pumping',
+  diaper:         '/log/diaper',
+  bath:           '/log/bath',
+  'growth-entry': '/log/growth-entry',
+};
+
+const PATH_TO_SCREEN = Object.fromEntries(
+  Object.entries(SCREEN_PATHS).map(([k, v]) => [v, k as Screen])
+) as Record<string, Screen>;
+
+// ─── Nav Context (carries only openSheet — nav/back/screen come from router) ──
+
+export const NavCtx = createContext<{ openSheet: () => void }>({ openSheet: () => {} });
 
 export function useNav() {
-  return useContext(NavCtx);
+  const navigate = useNavigate();
+  const { location } = useRouterState();
+  const { openSheet } = useContext(NavCtx);
+
+  const screen = PATH_TO_SCREEN[location.pathname] ?? 'home';
+
+  const nav = useCallback((target: Screen) => {
+    navigate({
+      to: SCREEN_PATHS[target] as never,
+      replace: TABS.has(target),
+    });
+  }, [navigate]);
+
+  const back = useCallback(() => { window.history.back(); }, []);
+
+  return { nav, back, screen, openSheet };
 }
 
 // ─── Primitives ──────────────────────────────────────────────────
