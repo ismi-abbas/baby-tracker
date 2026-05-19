@@ -88,7 +88,7 @@ export function createBabyApi(babyId: string) {
       weekly: ()                          => get(`/babies/${b}/stats/weekly`),
     },
     timeline: {
-      get: (date?: string, tz?: number)   => get(`/babies/${b}/timeline${date ? `?date=${date}${tz !== undefined ? `&tz=${tz}` : ''}` : ''}`),
+      get: (from?: string, to?: string)   => get(`/babies/${b}/timeline${from ? `?from=${from}&to=${to}` : ''}`),
     },
   };
 }

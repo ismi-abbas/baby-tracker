@@ -77,16 +77,11 @@ export function TimelineScreen() {
     const d = new Date(); d.setDate(d.getDate() - (4 - i)); return d;
   });
 
-  function toLocalDateStr(d: Date) {
-    const p = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-  }
-
   function loadEvents() {
     setLoading(true);
-    const dateStr = toLocalDateStr(selectedDate);
-    const tz = -new Date().getTimezoneOffset(); // minutes ahead of UTC
-    (api.timeline.get(dateStr, tz) as Promise<TimelineEvent[]>)
+    const from = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 0, 0, 0, 0).toISOString();
+    const to   = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59, 999).toISOString();
+    (api.timeline.get(from, to) as Promise<TimelineEvent[]>)
       .then(setEvents).catch(() => setEvents([]))
       .finally(() => setLoading(false));
   }
