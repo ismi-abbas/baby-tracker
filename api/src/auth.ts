@@ -6,11 +6,23 @@ import * as authSchema from "./db/auth-schema";
 
 const fullSchema = { ...appSchema, ...authSchema };
 
-export function createAuth(db: D1Database, secret: string, baseURL: string) {
+export function createAuth(
+  db: D1Database,
+  secret: string,
+  baseURL: string,
+  googleClientId: string,
+  googleClientSecret: string,
+) {
   const drizzleDb = drizzle(db, { schema: fullSchema });
   return betterAuth({
     database: drizzleAdapter(drizzleDb, { provider: "sqlite" }),
     emailAndPassword: { enabled: true },
+    socialProviders: {
+      google: {
+        clientId: googleClientId,
+        clientSecret: googleClientSecret,
+      },
+    },
     secret,
     baseURL,
     trustedOrigins: ["http://localhost:5173", baseURL.replace("-api", "")],
