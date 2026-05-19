@@ -60,14 +60,26 @@ function todayStart(): string {
 // ─── Auth routes ──────────────────────────────────────────────────
 
 app.on(["GET", "POST"], "/api/auth/**", async (c) => {
-  const auth = createAuth(c.env.DB, c.env.BETTER_AUTH_SECRET, c.env.BETTER_AUTH_URL, c.env.GOOGLE_CLIENT_ID, c.env.GOOGLE_CLIENT_SECRET);
+  const auth = createAuth(
+    c.env.DB,
+    c.env.BETTER_AUTH_SECRET,
+    c.env.BETTER_AUTH_URL,
+    c.env.GOOGLE_CLIENT_ID,
+    c.env.GOOGLE_CLIENT_SECRET,
+  );
   return auth.handler(c.req.raw);
 });
 
 // ─── Auth middleware (protects all /api/babies/* routes) ──────────
 
 app.use("/api/babies/*", async (c, next) => {
-  const auth = createAuth(c.env.DB, c.env.BETTER_AUTH_SECRET, c.env.BETTER_AUTH_URL, c.env.GOOGLE_CLIENT_ID, c.env.GOOGLE_CLIENT_SECRET);
+  const auth = createAuth(
+    c.env.DB,
+    c.env.BETTER_AUTH_SECRET,
+    c.env.BETTER_AUTH_URL,
+    c.env.GOOGLE_CLIENT_ID,
+    c.env.GOOGLE_CLIENT_SECRET,
+  );
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
   if (!session) return c.json({ error: "unauthorized" }, 401);
   c.set("userId", session.user.id);
@@ -75,7 +87,13 @@ app.use("/api/babies/*", async (c, next) => {
 });
 
 app.use("/api/seed", async (c, next) => {
-  const auth = createAuth(c.env.DB, c.env.BETTER_AUTH_SECRET, c.env.BETTER_AUTH_URL, c.env.GOOGLE_CLIENT_ID, c.env.GOOGLE_CLIENT_SECRET);
+  const auth = createAuth(
+    c.env.DB,
+    c.env.BETTER_AUTH_SECRET,
+    c.env.BETTER_AUTH_URL,
+    c.env.GOOGLE_CLIENT_ID,
+    c.env.GOOGLE_CLIENT_SECRET,
+  );
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
   if (!session) return c.json({ error: "unauthorized" }, 401);
   await next();
@@ -110,8 +128,14 @@ app.post("/api/babies", async (c) => {
 app.put("/api/babies/:id", async (c) => {
   const db = drizzle(c.env.DB, { schema: fullSchema });
   const body = await c.req.json();
-  await db.update(babies).set(body).where(eq(babies.id, c.req.param("id")));
-  const [row] = await db.select().from(babies).where(eq(babies.id, c.req.param("id")));
+  await db
+    .update(babies)
+    .set(body)
+    .where(eq(babies.id, c.req.param("id")));
+  const [row] = await db
+    .select()
+    .from(babies)
+    .where(eq(babies.id, c.req.param("id")));
   return c.json(row);
 });
 
@@ -138,12 +162,7 @@ app.delete("/api/babies/:babyId/caregivers/:id", async (c) => {
   const db = drizzle(c.env.DB, { schema: fullSchema });
   await db
     .delete(caregivers)
-    .where(
-      and(
-        eq(caregivers.id, c.req.param("id")),
-        eq(caregivers.babyId, c.req.param("babyId")),
-      ),
-    );
+    .where(and(eq(caregivers.id, c.req.param("id")), eq(caregivers.babyId, c.req.param("babyId"))));
   return c.json({ ok: true });
 });
 
@@ -175,13 +194,11 @@ app.put("/api/babies/:babyId/feedings/:id", async (c) => {
   await db
     .update(feedings)
     .set(body)
-    .where(
-      and(
-        eq(feedings.id, c.req.param("id")),
-        eq(feedings.babyId, c.req.param("babyId")),
-      ),
-    );
-  const [row] = await db.select().from(feedings).where(eq(feedings.id, c.req.param("id")));
+    .where(and(eq(feedings.id, c.req.param("id")), eq(feedings.babyId, c.req.param("babyId"))));
+  const [row] = await db
+    .select()
+    .from(feedings)
+    .where(eq(feedings.id, c.req.param("id")));
   return c.json(row);
 });
 
@@ -189,12 +206,7 @@ app.delete("/api/babies/:babyId/feedings/:id", async (c) => {
   const db = drizzle(c.env.DB, { schema: fullSchema });
   await db
     .delete(feedings)
-    .where(
-      and(
-        eq(feedings.id, c.req.param("id")),
-        eq(feedings.babyId, c.req.param("babyId")),
-      ),
-    );
+    .where(and(eq(feedings.id, c.req.param("id")), eq(feedings.babyId, c.req.param("babyId"))));
   return c.json({ ok: true });
 });
 
@@ -225,13 +237,11 @@ app.put("/api/babies/:babyId/sleeps/:id", async (c) => {
   await db
     .update(sleeps)
     .set(body)
-    .where(
-      and(
-        eq(sleeps.id, c.req.param("id")),
-        eq(sleeps.babyId, c.req.param("babyId")),
-      ),
-    );
-  const [row] = await db.select().from(sleeps).where(eq(sleeps.id, c.req.param("id")));
+    .where(and(eq(sleeps.id, c.req.param("id")), eq(sleeps.babyId, c.req.param("babyId"))));
+  const [row] = await db
+    .select()
+    .from(sleeps)
+    .where(eq(sleeps.id, c.req.param("id")));
   return c.json(row);
 });
 
@@ -239,12 +249,7 @@ app.delete("/api/babies/:babyId/sleeps/:id", async (c) => {
   const db = drizzle(c.env.DB, { schema: fullSchema });
   await db
     .delete(sleeps)
-    .where(
-      and(
-        eq(sleeps.id, c.req.param("id")),
-        eq(sleeps.babyId, c.req.param("babyId")),
-      ),
-    );
+    .where(and(eq(sleeps.id, c.req.param("id")), eq(sleeps.babyId, c.req.param("babyId"))));
   return c.json({ ok: true });
 });
 
@@ -348,10 +353,7 @@ app.put("/api/babies/:babyId/diapers/:id", async (c) => {
     .update(diaperChanges)
     .set(body)
     .where(
-      and(
-        eq(diaperChanges.id, c.req.param("id")),
-        eq(diaperChanges.babyId, c.req.param("babyId")),
-      ),
+      and(eq(diaperChanges.id, c.req.param("id")), eq(diaperChanges.babyId, c.req.param("babyId"))),
     );
   const [row] = await db
     .select()
@@ -365,10 +367,7 @@ app.delete("/api/babies/:babyId/diapers/:id", async (c) => {
   await db
     .delete(diaperChanges)
     .where(
-      and(
-        eq(diaperChanges.id, c.req.param("id")),
-        eq(diaperChanges.babyId, c.req.param("babyId")),
-      ),
+      and(eq(diaperChanges.id, c.req.param("id")), eq(diaperChanges.babyId, c.req.param("babyId"))),
     );
   return c.json({ ok: true });
 });
@@ -400,13 +399,11 @@ app.put("/api/babies/:babyId/baths/:id", async (c) => {
   await db
     .update(baths)
     .set(body)
-    .where(
-      and(
-        eq(baths.id, c.req.param("id")),
-        eq(baths.babyId, c.req.param("babyId")),
-      ),
-    );
-  const [row] = await db.select().from(baths).where(eq(baths.id, c.req.param("id")));
+    .where(and(eq(baths.id, c.req.param("id")), eq(baths.babyId, c.req.param("babyId"))));
+  const [row] = await db
+    .select()
+    .from(baths)
+    .where(eq(baths.id, c.req.param("id")));
   return c.json(row);
 });
 
@@ -414,12 +411,7 @@ app.delete("/api/babies/:babyId/baths/:id", async (c) => {
   const db = drizzle(c.env.DB, { schema: fullSchema });
   await db
     .delete(baths)
-    .where(
-      and(
-        eq(baths.id, c.req.param("id")),
-        eq(baths.babyId, c.req.param("babyId")),
-      ),
-    );
+    .where(and(eq(baths.id, c.req.param("id")), eq(baths.babyId, c.req.param("babyId"))));
   return c.json({ ok: true });
 });
 
@@ -451,10 +443,7 @@ app.put("/api/babies/:babyId/growth/:id", async (c) => {
     .update(growthEntries)
     .set(body)
     .where(
-      and(
-        eq(growthEntries.id, c.req.param("id")),
-        eq(growthEntries.babyId, c.req.param("babyId")),
-      ),
+      and(eq(growthEntries.id, c.req.param("id")), eq(growthEntries.babyId, c.req.param("babyId"))),
     );
   const [row] = await db
     .select()
@@ -468,10 +457,7 @@ app.delete("/api/babies/:babyId/growth/:id", async (c) => {
   await db
     .delete(growthEntries)
     .where(
-      and(
-        eq(growthEntries.id, c.req.param("id")),
-        eq(growthEntries.babyId, c.req.param("babyId")),
-      ),
+      and(eq(growthEntries.id, c.req.param("id")), eq(growthEntries.babyId, c.req.param("babyId"))),
     );
   return c.json({ ok: true });
 });
@@ -503,10 +489,7 @@ app.put("/api/babies/:babyId/visits/:id", async (c) => {
     .update(doctorVisits)
     .set(body)
     .where(
-      and(
-        eq(doctorVisits.id, c.req.param("id")),
-        eq(doctorVisits.babyId, c.req.param("babyId")),
-      ),
+      and(eq(doctorVisits.id, c.req.param("id")), eq(doctorVisits.babyId, c.req.param("babyId"))),
     );
   const [row] = await db
     .select()
@@ -525,11 +508,61 @@ app.get("/api/babies/:babyId/timeline", async (c) => {
   const dayEnd = `${date}T23:59:59.999Z`;
 
   const [feedRows, sleepRows, pumpRows, diaperRows, bathRows] = await Promise.all([
-    db.select().from(feedings).where(and(eq(feedings.babyId, babyId), gte(feedings.startedAt, dayStart), sql`${feedings.startedAt} <= ${dayEnd}`)).orderBy(desc(feedings.startedAt)),
-    db.select().from(sleeps).where(and(eq(sleeps.babyId, babyId), gte(sleeps.startedAt, dayStart), sql`${sleeps.startedAt} <= ${dayEnd}`)).orderBy(desc(sleeps.startedAt)),
-    db.select().from(pumpingSessions).where(and(eq(pumpingSessions.babyId, babyId), gte(pumpingSessions.startedAt, dayStart), sql`${pumpingSessions.startedAt} <= ${dayEnd}`)).orderBy(desc(pumpingSessions.startedAt)),
-    db.select().from(diaperChanges).where(and(eq(diaperChanges.babyId, babyId), gte(diaperChanges.changedAt, dayStart), sql`${diaperChanges.changedAt} <= ${dayEnd}`)).orderBy(desc(diaperChanges.changedAt)),
-    db.select().from(baths).where(and(eq(baths.babyId, babyId), gte(baths.bathedAt, dayStart), sql`${baths.bathedAt} <= ${dayEnd}`)).orderBy(desc(baths.bathedAt)),
+    db
+      .select()
+      .from(feedings)
+      .where(
+        and(
+          eq(feedings.babyId, babyId),
+          gte(feedings.startedAt, dayStart),
+          sql`${feedings.startedAt} <= ${dayEnd}`,
+        ),
+      )
+      .orderBy(desc(feedings.startedAt)),
+    db
+      .select()
+      .from(sleeps)
+      .where(
+        and(
+          eq(sleeps.babyId, babyId),
+          gte(sleeps.startedAt, dayStart),
+          sql`${sleeps.startedAt} <= ${dayEnd}`,
+        ),
+      )
+      .orderBy(desc(sleeps.startedAt)),
+    db
+      .select()
+      .from(pumpingSessions)
+      .where(
+        and(
+          eq(pumpingSessions.babyId, babyId),
+          gte(pumpingSessions.startedAt, dayStart),
+          sql`${pumpingSessions.startedAt} <= ${dayEnd}`,
+        ),
+      )
+      .orderBy(desc(pumpingSessions.startedAt)),
+    db
+      .select()
+      .from(diaperChanges)
+      .where(
+        and(
+          eq(diaperChanges.babyId, babyId),
+          gte(diaperChanges.changedAt, dayStart),
+          sql`${diaperChanges.changedAt} <= ${dayEnd}`,
+        ),
+      )
+      .orderBy(desc(diaperChanges.changedAt)),
+    db
+      .select()
+      .from(baths)
+      .where(
+        and(
+          eq(baths.babyId, babyId),
+          gte(baths.bathedAt, dayStart),
+          sql`${baths.bathedAt} <= ${dayEnd}`,
+        ),
+      )
+      .orderBy(desc(baths.bathedAt)),
   ]);
 
   const events = [
@@ -551,10 +584,22 @@ app.get("/api/babies/:babyId/stats/today", async (c) => {
   const start = todayStart();
 
   const [feedRows, sleepRows, pumpRows, diaperRows] = await Promise.all([
-    db.select().from(feedings).where(and(eq(feedings.babyId, babyId), gte(feedings.startedAt, start))),
-    db.select().from(sleeps).where(and(eq(sleeps.babyId, babyId), gte(sleeps.startedAt, start))),
-    db.select().from(pumpingSessions).where(and(eq(pumpingSessions.babyId, babyId), gte(pumpingSessions.startedAt, start))),
-    db.select().from(diaperChanges).where(and(eq(diaperChanges.babyId, babyId), gte(diaperChanges.changedAt, start))),
+    db
+      .select()
+      .from(feedings)
+      .where(and(eq(feedings.babyId, babyId), gte(feedings.startedAt, start))),
+    db
+      .select()
+      .from(sleeps)
+      .where(and(eq(sleeps.babyId, babyId), gte(sleeps.startedAt, start))),
+    db
+      .select()
+      .from(pumpingSessions)
+      .where(and(eq(pumpingSessions.babyId, babyId), gte(pumpingSessions.startedAt, start))),
+    db
+      .select()
+      .from(diaperChanges)
+      .where(and(eq(diaperChanges.babyId, babyId), gte(diaperChanges.changedAt, start))),
   ]);
 
   const totalSleepSeconds = sleepRows.reduce((s, r) => s + (r.durationSeconds ?? 0), 0);
@@ -588,17 +633,32 @@ app.get("/api/babies/:babyId/stats/weekly", async (c) => {
   const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
 
   const [feedRows, sleepRows, pumpRows, diaperRows] = await Promise.all([
-    db.select().from(feedings).where(and(eq(feedings.babyId, babyId), gte(feedings.startedAt, weekAgo))),
-    db.select().from(sleeps).where(and(eq(sleeps.babyId, babyId), gte(sleeps.startedAt, weekAgo))),
-    db.select().from(pumpingSessions).where(and(eq(pumpingSessions.babyId, babyId), gte(pumpingSessions.startedAt, weekAgo))),
-    db.select().from(diaperChanges).where(and(eq(diaperChanges.babyId, babyId), gte(diaperChanges.changedAt, weekAgo))),
+    db
+      .select()
+      .from(feedings)
+      .where(and(eq(feedings.babyId, babyId), gte(feedings.startedAt, weekAgo))),
+    db
+      .select()
+      .from(sleeps)
+      .where(and(eq(sleeps.babyId, babyId), gte(sleeps.startedAt, weekAgo))),
+    db
+      .select()
+      .from(pumpingSessions)
+      .where(and(eq(pumpingSessions.babyId, babyId), gte(pumpingSessions.startedAt, weekAgo))),
+    db
+      .select()
+      .from(diaperChanges)
+      .where(and(eq(diaperChanges.babyId, babyId), gte(diaperChanges.changedAt, weekAgo))),
   ]);
 
   return c.json({
     avgFeedsPerDay: Math.round((feedRows.length / 7) * 10) / 10,
     pumpingSessions: pumpRows.length,
     totalPumpedMl: pumpRows.reduce((s, r) => s + (r.totalMl ?? 0), 0),
-    avgWetDiapersPerDay: Math.round((diaperRows.filter((d) => d.type === "wet" || d.type === "mixed").length / 7) * 10) / 10,
+    avgWetDiapersPerDay:
+      Math.round(
+        (diaperRows.filter((d) => d.type === "wet" || d.type === "mixed").length / 7) * 10,
+      ) / 10,
     longestSleepSeconds: Math.max(0, ...sleepRows.map((s) => s.durationSeconds ?? 0)),
     totalSleepSeconds: sleepRows.reduce((s, r) => s + (r.durationSeconds ?? 0), 0),
   });
@@ -624,9 +684,33 @@ app.post("/api/seed", async (c) => {
   });
 
   await db.insert(caregivers).values([
-    { id: uid(), babyId, name: "Hakim", role: "Dad", permission: "admin", initials: "H", createdAt: now() },
-    { id: uid(), babyId, name: "Lina", role: "Mom", permission: "admin", initials: "L", createdAt: now() },
-    { id: uid(), babyId, name: "Mama Rosie", role: "Grandma", permission: "view", initials: "R", createdAt: now() },
+    {
+      id: uid(),
+      babyId,
+      name: "Hakim",
+      role: "Dad",
+      permission: "admin",
+      initials: "H",
+      createdAt: now(),
+    },
+    {
+      id: uid(),
+      babyId,
+      name: "Lina",
+      role: "Mom",
+      permission: "admin",
+      initials: "L",
+      createdAt: now(),
+    },
+    {
+      id: uid(),
+      babyId,
+      name: "Mama Rosie",
+      role: "Grandma",
+      permission: "view",
+      initials: "R",
+      createdAt: now(),
+    },
   ]);
 
   await db.insert(doctorVisits).values({
@@ -643,10 +727,46 @@ app.post("/api/seed", async (c) => {
   });
 
   await db.insert(growthEntries).values([
-    { id: uid(), babyId, weightG: 3400, lengthCm: 50, headCm: 34, visitType: "doctor", measuredAt: "2026-02-23T08:00:00.000Z", createdAt: now() },
-    { id: uid(), babyId, weightG: 4200, lengthCm: 54, headCm: 36, visitType: "home", measuredAt: "2026-03-23T08:00:00.000Z", createdAt: now() },
-    { id: uid(), babyId, weightG: 4800, lengthCm: 56, headCm: 37.5, visitType: "home", measuredAt: "2026-04-23T08:00:00.000Z", createdAt: now() },
-    { id: uid(), babyId, weightG: 5400, lengthCm: 58, headCm: 39.5, visitType: "doctor", measuredAt: "2026-05-12T09:00:00.000Z", createdAt: now() },
+    {
+      id: uid(),
+      babyId,
+      weightG: 3400,
+      lengthCm: 50,
+      headCm: 34,
+      visitType: "doctor",
+      measuredAt: "2026-02-23T08:00:00.000Z",
+      createdAt: now(),
+    },
+    {
+      id: uid(),
+      babyId,
+      weightG: 4200,
+      lengthCm: 54,
+      headCm: 36,
+      visitType: "home",
+      measuredAt: "2026-03-23T08:00:00.000Z",
+      createdAt: now(),
+    },
+    {
+      id: uid(),
+      babyId,
+      weightG: 4800,
+      lengthCm: 56,
+      headCm: 37.5,
+      visitType: "home",
+      measuredAt: "2026-04-23T08:00:00.000Z",
+      createdAt: now(),
+    },
+    {
+      id: uid(),
+      babyId,
+      weightG: 5400,
+      lengthCm: 58,
+      headCm: 39.5,
+      visitType: "doctor",
+      measuredAt: "2026-05-12T09:00:00.000Z",
+      createdAt: now(),
+    },
   ]);
 
   return c.json({ ok: true, seeded: true });
