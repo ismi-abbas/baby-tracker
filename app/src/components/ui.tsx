@@ -245,6 +245,50 @@ export function TabBar({ active }: { active?: Screen }) {
   );
 }
 
+// ─── Entry mode toggle (Live / Manual) ──────────────────────────
+
+export function EntryModeToggle({ mode, onChange }: { mode: 'live' | 'manual'; onChange: (m: 'live' | 'manual') => void }) {
+  return (
+    <div style={{ display: 'inline-flex', padding: 3, borderRadius: 10, background: 'rgba(0,0,0,0.05)' }}>
+      {(['live', 'manual'] as const).map(m => (
+        <button key={m} onClick={() => onChange(m)} style={{
+          padding: '7px 18px', borderRadius: 8, border: 'none', cursor: 'pointer',
+          background: mode === m ? T.card : 'transparent',
+          color: mode === m ? T.terracotta : T.inkMute,
+          fontFamily: fonts.sans, fontSize: 12.5, fontWeight: 700,
+          boxShadow: mode === m ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+          transition: 'all 0.12s',
+        }}>
+          {m === 'live' ? '⏱ Live' : '✎ Manual'}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── DateTime field ───────────────────────────────────────────────
+
+export function DateTimeField({
+  label, value, onChange,
+  type = 'datetime-local', max,
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  type?: 'datetime-local' | 'date' | 'time'; max?: string;
+}) {
+  return (
+    <div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: T.inkMute, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6 }}>{label}</div>
+      <input type={type} value={value} onChange={e => onChange(e.target.value)} max={max}
+        style={{
+          width: '100%', padding: '12px 14px', borderRadius: 12,
+          border: `1.5px solid ${T.rule}`, background: T.card,
+          fontFamily: fonts.sans, fontSize: 14, color: T.ink,
+          outline: 'none', boxSizing: 'border-box', colorScheme: 'light',
+        }} />
+    </div>
+  );
+}
+
 // ─── Shared button styles ────────────────────────────────────────
 
 export const iconBtnStyle: React.CSSProperties = {
