@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { T, fonts } from '../tokens';
-import { Card, Chip, TabBar, iconBtnStyle, fmtTime } from '../components/ui';
+import { T } from '../tokens';
+import { Card, Chip, TabBar, fmtTime } from '../components/ui';
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
 import { formatMilk, type MilkUnit, useUnitPrefs } from '../units';
 import type { TimelineEvent } from '../types';
+import { cn } from '../lib/utils';
 
 const CATEGORY_ROUTE: Record<string, string> = {
   feeding: '/log/feeding',
@@ -16,7 +17,7 @@ const CATEGORY_ROUTE: Record<string, string> = {
 };
 
 const CAT_CONFIG = {
-  feeding: { icon: I.feed, color: T.terracotta, soft: T.terracottaSoft, label: (e: TimelineEvent, milkUnit: MilkUnit) => {
+  feeding: { icon: I.feed, color: T.terracotta, soft: T.terracottaSoft, colorClass: 'text-terracotta', bgClass: 'bg-terracotta', softClass: 'bg-terracotta-soft', label: (e: TimelineEvent, milkUnit: MilkUnit) => {
     const f = e as unknown as { type: string; side?: string; amountMl?: number };
     if (f.type === 'breast') return `Breastfed · ${f.side ? f.side.charAt(0).toUpperCase() + f.side.slice(1) : 'Both'}`;
     if (f.type === 'bottle') return `Bottle · ${formatMilk(f.amountMl, milkUnit)}`;
@@ -27,24 +28,24 @@ const CAT_CONFIG = {
     if (f.amountMl) return formatMilk(f.amountMl, milkUnit);
     return '';
   }},
-  sleep: { icon: I.sleep, color: T.sage, soft: T.sageSoft, label: () => 'Sleep', sub: (e: TimelineEvent) => {
+  sleep: { icon: I.sleep, color: T.sage, soft: T.sageSoft, colorClass: 'text-sage', bgClass: 'bg-sage', softClass: 'bg-sage-soft', label: () => 'Sleep', sub: (e: TimelineEvent) => {
     const s = e as unknown as { endedAt?: string; durationSeconds?: number };
     if (!s.endedAt) return 'still going';
     if (s.durationSeconds) return `${Math.floor(s.durationSeconds / 60)} min`;
     return '';
   }},
-  pumping: { icon: I.pump, color: T.honey, soft: T.honeySoft, label: () => 'Pumping', sub: (e: TimelineEvent, milkUnit: MilkUnit) => {
+  pumping: { icon: I.pump, color: T.honey, soft: T.honeySoft, colorClass: 'text-honey', bgClass: 'bg-honey', softClass: 'bg-honey-soft', label: () => 'Pumping', sub: (e: TimelineEvent, milkUnit: MilkUnit) => {
     const p = e as unknown as { totalMl?: number; storageType?: string };
     return `${formatMilk(p.totalMl, milkUnit)}${p.storageType ? ` · ${p.storageType}` : ''}`;
   }},
-  diaper: { icon: I.diaper, color: T.earth, soft: T.earthSoft, label: (e: TimelineEvent) => {
+  diaper: { icon: I.diaper, color: T.earth, soft: T.earthSoft, colorClass: 'text-earth', bgClass: 'bg-earth', softClass: 'bg-earth-soft', label: (e: TimelineEvent) => {
     const d = e as unknown as { type: string };
     return d.type === 'wet' ? 'Wet diaper' : d.type === 'dirty' ? 'Dirty diaper' : 'Mixed diaper';
   }, sub: (e: TimelineEvent) => {
     const d = e as unknown as { consistency?: string };
     return d.consistency ?? '—';
   }},
-  bath: { icon: I.bath, color: T.sky, soft: T.skySoft, label: () => 'Bath', sub: (e: TimelineEvent) => {
+  bath: { icon: I.bath, color: T.sky, soft: T.skySoft, colorClass: 'text-sky', bgClass: 'bg-sky', softClass: 'bg-sky-soft', label: () => 'Bath', sub: (e: TimelineEvent) => {
     const b = e as { durationMinutes?: number; waterTempC?: number };
     return `${b.durationMinutes ?? 0} min${b.waterTempC ? ` · ${b.waterTempC} °C` : ''}`;
   }},
@@ -123,44 +124,37 @@ export function TimelineScreen() {
   ] as const;
 
   return (
-    <div style={{ width: '100%', minHeight: '100%', background: T.cream, fontFamily: fonts.sans, display: 'flex', flexDirection: 'column', paddingTop: 'max(20px, env(safe-area-inset-top))', boxSizing: 'border-box' }}>
-      <div style={{ padding: '8px 22px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+    <div className="box-border flex min-h-full w-full flex-col bg-cream pt-[max(20px,env(safe-area-inset-top))] font-sans">
+      <div className="flex items-start justify-between px-[22px] pt-2">
         <div>
-          <div style={{ color: T.inkMute, fontSize: 12, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>TIMELINE</div>
-          <div style={{ fontFamily: fonts.serif, fontSize: 30, color: T.ink, lineHeight: 1.05, letterSpacing: -0.5, marginTop: 2 }}>
+          <div className="text-xs font-semibold uppercase tracking-[0.5px] text-ink-mute">TIMELINE</div>
+          <div className="mt-0.5 font-serif text-[30px] leading-[1.05] tracking-[-0.5px] text-ink">
             {selectedDate.toDateString() === new Date().toDateString() ? (
-              <>Today<span style={{ fontStyle: 'italic', color: T.terracotta }}>.</span></>
+              <>Today<span className="italic text-terracotta">.</span></>
             ) : selectedDate.toLocaleDateString([], { month: 'short', day: 'numeric' })}
           </div>
         </div>
-        <button style={iconBtnStyle}><div style={{ width: 18, height: 18, color: T.ink }}>{I.timeline}</div></button>
+        <button className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-xl border-0 bg-black/4"><div className="h-[18px] w-[18px] text-ink">{I.timeline}</div></button>
       </div>
 
       {/* Date scroller */}
-      <div style={{ padding: '12px 16px 0', display: 'flex', gap: 6 }}>
+      <div className="flex gap-1.5 px-4 pt-3">
         {last5Days.map((d, i) => {
           const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
           const active = d.toDateString() === selectedDate.toDateString();
           return (
-            <div key={i} onClick={() => { setSelectedDate(d); setExpandedId(null); }} style={{
-              flex: 1, padding: '8px 0', borderRadius: 13, textAlign: 'center', cursor: 'pointer',
-              background: active ? T.terracotta : T.card, color: active ? T.card : T.ink,
-              border: active ? 'none' : `1px solid ${T.rule}`,
-            }}>
-              <div style={{ fontSize: 10, fontWeight: 600, opacity: active ? 0.8 : 0.5, textTransform: 'uppercase', letterSpacing: 0.4 }}>{days[d.getDay()]}</div>
-              <div style={{ fontFamily: fonts.serif, fontSize: 18, fontWeight: 600, marginTop: 1 }}>{d.getDate()}</div>
+            <div key={i} onClick={() => { setSelectedDate(d); setExpandedId(null); }} className={cn('flex-1 cursor-pointer rounded-[13px] py-2 text-center', active ? 'bg-terracotta text-card' : 'border border-rule bg-card text-ink')}>
+              <div className={cn('text-[10px] font-semibold uppercase tracking-[0.4px]', active ? 'opacity-80' : 'opacity-50')}>{days[d.getDay()]}</div>
+              <div className="mt-px font-serif text-lg font-semibold">{d.getDate()}</div>
             </div>
           );
         })}
       </div>
 
       {/* Filter pills */}
-      <div style={{ padding: '12px 16px 4px', display: 'flex', gap: 6, overflowX: 'auto' }}>
+      <div className="flex gap-1.5 overflow-x-auto px-4 pt-3 pb-1">
         {filterPills.map(([id, label, color, soft]) => (
-          <div key={id} onClick={() => setFilter(id)} style={{
-            padding: '6px 12px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
-            background: soft, color, border: filter === id ? `1.5px solid ${color}` : 'none',
-          }}>
+          <div key={id} onClick={() => setFilter(id)} className={cn('cursor-pointer whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold', soft === T.terracottaSoft ? 'bg-terracotta-soft text-terracotta' : soft === T.earthSoft ? 'bg-earth-soft text-earth' : soft === T.sageSoft ? 'bg-sage-soft text-sage' : soft === T.honeySoft ? 'bg-honey-soft text-honey' : 'bg-parchment text-ink', filter === id && (color === T.terracotta ? 'border-[1.5px] border-terracotta' : color === T.earth ? 'border-[1.5px] border-earth' : color === T.sage ? 'border-[1.5px] border-sage' : color === T.honey ? 'border-[1.5px] border-honey' : 'border-[1.5px] border-ink'))}>
             {label} {id !== 'all' ? `· ${events.filter(e => e.category === id).length}` : `· ${events.length}`}
           </div>
         ))}
@@ -168,16 +162,16 @@ export function TimelineScreen() {
 
       {/* Timeline rail */}
       {loading ? (
-        <div style={{ padding: '24px', textAlign: 'center', color: T.inkMute, fontSize: 14 }}>Loading…</div>
+        <div className="p-6 text-center text-sm text-ink-mute">Loading…</div>
       ) : filtered.length === 0 ? (
-        <div style={{ padding: '36px 22px', textAlign: 'center' }}>
-          <div style={{ fontSize: 32, marginBottom: 10 }}>🌙</div>
-          <div style={{ fontFamily: fonts.serif, fontSize: 20, color: T.ink }}>Nothing logged yet</div>
-          <div style={{ fontSize: 13, color: T.inkMute, marginTop: 4 }}>Tap + to log an activity</div>
+        <div className="px-[22px] py-9 text-center">
+          <div className="mb-2.5 text-[32px]">🌙</div>
+          <div className="font-serif text-xl text-ink">Nothing logged yet</div>
+          <div className="mt-1 text-[13px] text-ink-mute">Tap + to log an activity</div>
         </div>
       ) : (
-        <div style={{ padding: '12px 16px 0', position: 'relative', flex: 1 }}>
-          <div style={{ position: 'absolute', left: 36, top: 14, bottom: 0, width: 2, background: T.rule }} />
+        <div className="relative flex-1 px-4 pt-3">
+          <div className="absolute top-3.5 bottom-0 left-9 w-0.5 bg-rule" />
           {filtered.map((e) => {
             const cfg = CAT_CONFIG[e.category as keyof typeof CAT_CONFIG];
             if (!cfg) return null;
@@ -185,52 +179,42 @@ export function TimelineScreen() {
             const isExpanded = expandedId === e.id;
             const canEdit = !!CATEGORY_ROUTE[e.category];
             return (
-              <div key={e.id} style={{ display: 'flex', gap: 12, marginBottom: 10, position: 'relative' }}>
-                <div style={{ width: 40, textAlign: 'right', paddingTop: 12, flexShrink: 0 }}>
-                  <div style={{ fontFamily: fonts.mono, fontSize: 11, fontWeight: 600, color: T.inkSoft }}>{fmtTime(e.eventTime)}</div>
+              <div key={e.id} className="relative mb-2.5 flex gap-3">
+                <div className="w-10 shrink-0 pt-3 text-right">
+                  <div className="font-mono text-[11px] font-semibold text-ink-soft">{fmtTime(e.eventTime)}</div>
                 </div>
-                <div style={{ position: 'relative', zIndex: 2, paddingTop: 10, flexShrink: 0 }}>
-                  <div style={{ width: 14, height: 14, borderRadius: 7, background: cfg.color, border: `3px solid ${T.cream}`, boxShadow: isLive ? `0 0 0 3px ${cfg.soft}` : 'none' }} />
+                <div className="relative z-[2] shrink-0 pt-2.5">
+                  <div className={cn('h-3.5 w-3.5 rounded-full border-[3px] border-cream', cfg.bgClass, isLive && (cfg.softClass === 'bg-terracotta-soft' ? 'shadow-[0_0_0_3px_#f1d8c7]' : cfg.softClass === 'bg-sage-soft' ? 'shadow-[0_0_0_3px_#dde5d5]' : ''))} />
                 </div>
-                <div style={{ flex: 1, paddingBottom: 4 }}>
-                  <Card pad={12} style={{ overflow: 'hidden' }} onClick={canEdit ? () => setExpandedId(isExpanded ? null : e.id) : undefined}>
+                <div className="flex-1 pb-1">
+                  <Card pad={12} onClick={canEdit ? () => setExpandedId(isExpanded ? null : e.id) : undefined}>
                     {/* Main row */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 9, background: cfg.soft, color: cfg.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <div style={{ width: 18, height: 18 }}>{cfg.icon}</div>
+                    <div className="flex items-center gap-2.5">
+                      <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px]', cfg.softClass, cfg.colorClass)}>
+                        <div className="h-[18px] w-[18px]">{cfg.icon}</div>
                       </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cfg.label(e, prefs.milkUnit)}</div>
-                        <div style={{ fontSize: 11, color: T.inkMute, marginTop: 1 }}>{cfg.sub(e, prefs.milkUnit)} · {(e as { loggedBy?: string }).loggedBy ?? 'You'}</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate whitespace-nowrap text-[13px] font-bold text-ink">{cfg.label(e, prefs.milkUnit)}</div>
+                        <div className="mt-px text-[11px] text-ink-mute">{cfg.sub(e, prefs.milkUnit)} · {(e as { loggedBy?: string }).loggedBy ?? 'You'}</div>
                       </div>
                       {isLive && <Chip color={T.terracotta} soft={T.terracottaSoft}>● live</Chip>}
                       {canEdit && (
-                        <div style={{ width: 14, height: 14, color: T.inkMute, flexShrink: 0, transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>{I.chev}</div>
+                        <div className={cn('h-3.5 w-3.5 shrink-0 text-ink-mute transition-transform duration-150', isExpanded && 'rotate-180')}>{I.chev}</div>
                       )}
                     </div>
 
                     {/* Action row — shown when expanded */}
                     {isExpanded && (
-                      <div style={{ display: 'flex', gap: 8, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.rule}` }}>
-                        <button onClick={(ev) => { ev.stopPropagation(); handleEdit(e); }} style={{
-                          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                          padding: '8px 0', borderRadius: 10, border: `1.5px solid ${T.terracotta}`,
-                          background: T.terracottaSoft, color: T.terracotta,
-                          fontFamily: fonts.sans, fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
-                        }}>
-                          <div style={{ width: 14, height: 14 }}><EditIcon /></div>
+                      <div className="mt-2.5 flex gap-2 border-t border-rule pt-2.5">
+                        <button onClick={(ev) => { ev.stopPropagation(); handleEdit(e); }} className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[10px] border-[1.5px] border-terracotta bg-terracotta-soft py-2 font-sans text-[12.5px] font-bold text-terracotta">
+                          <div className="h-3.5 w-3.5"><EditIcon /></div>
                           Edit
                         </button>
                         <button
                           onClick={(ev) => { ev.stopPropagation(); handleDelete(e); }}
                           disabled={deletingId === e.id}
-                          style={{
-                            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                            padding: '8px 0', borderRadius: 10, border: `1.5px solid #E53E3E`,
-                            background: '#FEF2F2', color: '#E53E3E',
-                            fontFamily: fonts.sans, fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
-                          }}>
-                          <div style={{ width: 14, height: 14 }}><DeleteIcon /></div>
+                          className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[10px] border-[1.5px] border-[#E53E3E] bg-[#FEF2F2] py-2 font-sans text-[12.5px] font-bold text-[#E53E3E]">
+                          <div className="h-3.5 w-3.5"><DeleteIcon /></div>
                           {deletingId === e.id ? 'Deleting…' : 'Delete'}
                         </button>
                       </div>

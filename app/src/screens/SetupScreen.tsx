@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { T, fonts } from '../tokens';
 import { api } from '../api/client';
 import { useBaby } from '../context/BabyContext';
 
@@ -32,93 +31,84 @@ export function SetupScreen() {
     }
   }
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '14px 16px', borderRadius: 14,
-    border: `1.5px solid ${T.rule}`, background: T.card,
-    fontFamily: fonts.sans, fontSize: 15, color: T.ink,
-    outline: 'none', boxSizing: 'border-box', WebkitAppearance: 'none',
-  };
+  const inputClassName =
+    'w-full appearance-none box-border rounded-[14px] border-[1.5px] border-rule bg-card px-4 py-[14px] font-sans text-[15px] text-ink outline-none';
+  const labelClassName =
+    'mb-1.5 block text-[11.5px] font-bold uppercase tracking-[0.4px] text-ink-soft';
 
   return (
-    <div style={{
-      width: '100%', minHeight: '100%', background: T.cream,
-      fontFamily: fonts.sans, display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      padding: 'max(40px, env(safe-area-inset-top)) 28px max(40px, env(safe-area-inset-bottom))',
-      boxSizing: 'border-box',
-    }}>
-      <div style={{ textAlign: 'center', marginBottom: 32 }}>
-        <div style={{
-          width: 80, height: 80, borderRadius: 40,
-          background: `linear-gradient(135deg, ${T.terracottaSoft}, ${T.honeySoft})`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 36, margin: '0 auto 16px', boxShadow: T.shadowLg,
-        }}>👶</div>
-        <div style={{ fontFamily: fonts.serif, fontSize: 28, color: T.ink, letterSpacing: -0.5, lineHeight: 1.15 }}>
+    <div className="flex min-h-full w-full flex-col items-center justify-center box-border bg-cream px-7 pt-[max(40px,env(safe-area-inset-top))] pb-[max(40px,env(safe-area-inset-bottom))] font-sans">
+      <div className="mb-8 text-center">
+        <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-[40px] bg-[linear-gradient(135deg,var(--color-terracotta-soft),var(--color-honey-soft))] text-4xl shadow-card-lg">👶</div>
+        <div className="font-serif text-[28px] leading-[1.15] tracking-[-0.5px] text-ink">
           Add your baby
         </div>
-        <div style={{ fontSize: 13, color: T.inkMute, marginTop: 6 }}>
+        <div className="mt-1.5 text-[13px] text-ink-mute">
           Let's get you set up
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <form onSubmit={handleSubmit} className="flex w-full max-w-[360px] flex-col gap-3.5">
         <div>
-          <label style={{ fontSize: 11.5, fontWeight: 700, color: T.inkSoft, letterSpacing: 0.4, textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
+          <label className={labelClassName}>
             Baby's name *
           </label>
           <input type="text" value={name} onChange={e => setName(e.target.value)}
-            placeholder="e.g. Saif" required style={inputStyle} />
+            placeholder="e.g. Saif" required className={inputClassName} />
         </div>
 
         <div>
-          <label style={{ fontSize: 11.5, fontWeight: 700, color: T.inkSoft, letterSpacing: 0.4, textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
+          <label className={labelClassName}>
             Date of birth *
           </label>
           <input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)}
             required max={new Date().toISOString().slice(0, 10)}
-            style={{ ...inputStyle, colorScheme: 'light' }} />
+            className={`${inputClassName} [color-scheme:light]`} />
         </div>
 
         <div>
-          <label style={{ fontSize: 11.5, fontWeight: 700, color: T.inkSoft, letterSpacing: 0.4, textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
+          <label className={`${labelClassName} mb-2`}>
             Gender
           </label>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="flex gap-2">
             {(['boy', 'girl', 'other'] as const).map(g => (
-              <button key={g} type="button" onClick={() => setGender(gender === g ? '' : g)} style={{
-                flex: 1, padding: '10px 0', borderRadius: 12, border: `1.5px solid ${gender === g ? T.terracotta : T.rule}`,
-                background: gender === g ? T.terracottaSoft : T.card,
-                color: gender === g ? T.terracotta : T.inkSoft,
-                fontFamily: fonts.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                textTransform: 'capitalize',
-              }}>{g}</button>
+              <button
+                key={g}
+                type="button"
+                onClick={() => setGender(gender === g ? '' : g)}
+                className={`flex-1 cursor-pointer rounded-xl border-[1.5px] py-2.5 font-sans text-[13px] font-semibold capitalize ${
+                  gender === g
+                    ? 'border-terracotta bg-terracotta-soft text-terracotta'
+                    : 'border-rule bg-card text-ink-soft'
+                }`}
+              >{g}</button>
             ))}
           </div>
         </div>
 
         <div>
-          <label style={{ fontSize: 11.5, fontWeight: 700, color: T.inkSoft, letterSpacing: 0.4, textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
+          <label className={labelClassName}>
             Doctor's name
           </label>
           <input type="text" value={doctorName} onChange={e => setDoctorName(e.target.value)}
-            placeholder="e.g. Dr. Smith" style={inputStyle} />
+            placeholder="e.g. Dr. Smith" className={inputClassName} />
         </div>
 
         {error && (
-          <div style={{ padding: '10px 14px', borderRadius: 12, background: '#FDE8E8', color: '#C0392B', fontSize: 13 }}>
+          <div className="rounded-xl bg-[#FDE8E8] px-3.5 py-2.5 text-[13px] text-[#C0392B]">
             {error}
           </div>
         )}
 
-        <button type="submit" disabled={loading || !name.trim() || !birthDate} style={{
-          marginTop: 4, width: '100%', padding: '15px 0', borderRadius: 16, border: 'none',
-          background: loading || !name.trim() || !birthDate ? T.terracottaSoft : T.terracotta,
-          color: loading || !name.trim() || !birthDate ? T.terracotta : T.card,
-          fontFamily: fonts.sans, fontSize: 15, fontWeight: 700,
-          cursor: loading || !name.trim() || !birthDate ? 'not-allowed' : 'pointer',
-          letterSpacing: 0.2,
-        }}>
+        <button
+          type="submit"
+          disabled={loading || !name.trim() || !birthDate}
+          className={`mt-1 w-full rounded-2xl border-0 py-[15px] font-sans text-[15px] font-bold tracking-[0.2px] ${
+            loading || !name.trim() || !birthDate
+              ? 'cursor-not-allowed bg-terracotta-soft text-terracotta'
+              : 'cursor-pointer bg-terracotta text-card'
+          }`}
+        >
           {loading ? 'Creating…' : 'Get started'}
         </button>
       </form>

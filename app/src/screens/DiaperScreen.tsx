@@ -1,14 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { T, fonts } from '../tokens';
-import { BackBtn, Card, iconBtnStyle, primaryBtnStyle, useNav, DateTimeField } from '../components/ui';
+import { T } from '../tokens';
+import { BackBtn, Card, useNav, DateTimeField } from '../components/ui';
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
 import { useEditRecord } from '../hooks/useEditRecord';
 import type { DiaperChange } from '../types';
+import { cn } from '../lib/utils';
 
 type DiaperType = 'wet' | 'dirty' | 'mixed';
 type Consistency = 'Soft' | 'Seedy' | 'Watery' | 'Hard' | 'Mucousy';
-const COLORS = ['#C5A06A', '#8C5E2A', '#5A4A2A', '#3F5F3A', '#7A4040'];
+const COLORS = [
+  { value: '#C5A06A', className: 'bg-[#C5A06A]' },
+  { value: '#8C5E2A', className: 'bg-[#8C5E2A]' },
+  { value: '#5A4A2A', className: 'bg-[#5A4A2A]' },
+  { value: '#3F5F3A', className: 'bg-[#3F5F3A]' },
+  { value: '#7A4040', className: 'bg-[#7A4040]' },
+];
 
 function toLocalDT(d: Date) {
   const p = (n: number) => String(n).padStart(2, '0');
@@ -21,7 +28,7 @@ export function DiaperScreen() {
   const { editId, record: editRecord } = useEditRecord<DiaperChange>(id => api.diapers.get(id) as Promise<DiaperChange>);
   const [type, setType] = useState<DiaperType>('wet');
   const [consistency, setConsistency] = useState<Consistency | null>(null);
-  const [color, setColor] = useState(COLORS[1]);
+  const [color, setColor] = useState(COLORS[1].value);
   const [notes, setNotes] = useState('');
   const [useCustomTime, setUseCustomTime] = useState(false);
   const [customTime, setCustomTime] = useState(() => toLocalDT(new Date()));
@@ -47,56 +54,65 @@ export function DiaperScreen() {
   }
 
   const types = [
-    { id: 'wet' as DiaperType, label: 'Wet', sub: 'Pee only', icon: '💧', color: T.sky, soft: T.skySoft },
-    { id: 'dirty' as DiaperType, label: 'Dirty', sub: 'Poo', icon: '●', color: T.earth, soft: T.earthSoft },
-    { id: 'mixed' as DiaperType, label: 'Mixed', sub: 'Both', icon: '◐', color: T.honey, soft: T.honeySoft },
+    { id: 'wet' as DiaperType, label: 'Wet', sub: 'Pee only', icon: '💧', activeClass: 'bg-sky text-card shadow-[0_6px_18px_#7BA7B855]' },
+    { id: 'dirty' as DiaperType, label: 'Dirty', sub: 'Poo', icon: '●', activeClass: 'bg-earth text-card shadow-[0_6px_18px_#A07A5555]' },
+    { id: 'mixed' as DiaperType, label: 'Mixed', sub: 'Both', icon: '◐', activeClass: 'bg-honey text-card shadow-[0_6px_18px_#E0A95C55]' },
   ];
 
   return (
-    <div style={{ width: '100%', minHeight: '100%', background: T.cream, fontFamily: fonts.sans, display: 'flex', flexDirection: 'column', paddingTop: 'max(20px, env(safe-area-inset-top))', boxSizing: 'border-box' }}>
-      <div style={{ padding: '6px 20px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div className="box-border flex min-h-full w-full flex-col bg-cream pt-[max(20px,env(safe-area-inset-top))] font-sans">
+      <div className="flex items-center gap-2.5 px-5 pt-1.5">
         <BackBtn />
-        <div style={{ flex: 1, textAlign: 'center', fontSize: 13, fontWeight: 700, color: T.ink, letterSpacing: 0.4, textTransform: 'uppercase' }}>{editId ? 'Edit Diaper' : 'Diaper Change'}</div>
-        <button style={iconBtnStyle}><div style={{ width: 18, height: 18, color: T.ink }}>{I.doc}</div></button>
+        <div className="flex-1 text-center text-[13px] font-bold tracking-[0.4px] text-ink uppercase">{editId ? 'Edit Diaper' : 'Diaper Change'}</div>
+        <button className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-xl border-0 bg-black/4"><div className="h-[18px] w-[18px] text-ink">{I.doc}</div></button>
       </div>
-      <div style={{ padding: '18px 22px 0' }}>
-        <div style={{ fontFamily: fonts.serif, fontSize: 26, color: T.ink, letterSpacing: -0.4 }}>What's in there?</div>
-        <div style={{ fontSize: 13, color: T.inkSoft, marginTop: 4 }}>Tap one. Add notes if anything unusual.</div>
+      <div className="px-[22px] pt-[18px]">
+        <div className="font-serif text-[26px] tracking-[-0.4px] text-ink">What's in there?</div>
+        <div className="mt-1 text-[13px] text-ink-soft">Tap one. Add notes if anything unusual.</div>
       </div>
-      <div style={{ padding: '16px 16px 0' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-          {types.map(t => (<div key={t.id} onClick={() => setType(t.id)} style={{ padding: 16, borderRadius: 20, textAlign: 'center', cursor: 'pointer', background: type === t.id ? t.color : T.card, color: type === t.id ? T.card : T.ink, border: type === t.id ? 'none' : `1px solid ${T.rule}`, boxShadow: type === t.id ? `0 6px 18px ${t.color}55` : 'none', transition: 'all 0.15s' }}><div style={{ fontSize: 26, lineHeight: 1, marginBottom: 8, opacity: type === t.id ? 1 : 0.7 }}>{t.icon}</div><div style={{ fontSize: 14, fontWeight: 700 }}>{t.label}</div><div style={{ fontSize: 11, marginTop: 2, opacity: type === t.id ? 0.85 : 0.5 }}>{t.sub}</div></div>))}
+      <div className="px-4 pt-4">
+        <div className="grid grid-cols-3 gap-2.5">
+          {types.map(t => {
+            const active = type === t.id;
+            return (
+              <div key={t.id} onClick={() => setType(t.id)} className={cn('cursor-pointer rounded-[20px] p-4 text-center transition-all duration-150', active ? `border-0 ${t.activeClass}` : 'border border-rule bg-card text-ink')}>
+                <div className={cn('mb-2 text-[26px] leading-none', active ? 'opacity-100' : 'opacity-70')}>{t.icon}</div>
+                <div className="text-sm font-bold">{t.label}</div>
+                <div className={cn('mt-0.5 text-[11px]', active ? 'opacity-85' : 'opacity-50')}>{t.sub}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
       {(type === 'dirty' || type === 'mixed') && (
-        <div style={{ padding: '20px 16px 0' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: T.inkMute, letterSpacing: 0.6, textTransform: 'uppercase', padding: '0 6px 8px' }}>Consistency</div>
+        <div className="px-4 pt-5">
+          <div className="px-1.5 pb-2 text-[11px] font-bold tracking-[0.6px] text-ink-mute uppercase">Consistency</div>
           <Card pad={14}>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {(['Soft', 'Seedy', 'Watery', 'Hard', 'Mucousy'] as Consistency[]).map(c => (<div key={c} onClick={() => setConsistency(consistency === c ? null : c)} style={{ padding: '7px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', background: consistency === c ? T.earth : 'transparent', color: consistency === c ? T.card : T.inkSoft, border: consistency === c ? 'none' : `1px solid ${T.rule}`, transition: 'all 0.15s' }}>{c}</div>))}
+            <div className="flex flex-wrap gap-2">
+              {(['Soft', 'Seedy', 'Watery', 'Hard', 'Mucousy'] as Consistency[]).map(c => (<div key={c} onClick={() => setConsistency(consistency === c ? null : c)} className={cn('cursor-pointer rounded-full px-3.5 py-[7px] text-[12.5px] font-semibold transition-all duration-150', consistency === c ? 'border-0 bg-earth text-card' : 'border border-rule bg-transparent text-ink-soft')}>{c}</div>))}
             </div>
-            <div style={{ display: 'flex', gap: 10, marginTop: 12, alignItems: 'center' }}>
-              <div style={{ fontSize: 11.5, color: T.inkMute, fontWeight: 600 }}>Color</div>
-              {COLORS.map(c => (<div key={c} onClick={() => setColor(c)} style={{ width: 22, height: 22, borderRadius: 11, background: c, cursor: 'pointer', border: color === c ? `2px solid ${T.ink}` : `2px solid ${T.card}`, boxShadow: `0 0 0 1px ${T.rule}`, transform: color === c ? 'scale(1.2)' : 'scale(1)', transition: 'transform 0.1s' }} />))}
+            <div className="mt-3 flex items-center gap-2.5">
+              <div className="text-[11.5px] font-semibold text-ink-mute">Color</div>
+              {COLORS.map(c => (<div key={c.value} onClick={() => setColor(c.value)} className={cn('h-[22px] w-[22px] cursor-pointer rounded-full shadow-[0_0_0_1px_#e6dbc4] transition-transform duration-100', c.className, color === c.value ? 'scale-[1.2] border-2 border-ink' : 'scale-100 border-2 border-card')} />))}
             </div>
           </Card>
         </div>
       )}
-      <div style={{ padding: '14px 16px 0' }}>
+      <div className="px-4 pt-3.5">
         <Card pad={14}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: useCustomTime ? 14 : 0 }}>
+          <div className={cn('flex items-center justify-between', useCustomTime && 'mb-3.5')}>
             <div>
-              <div style={{ fontSize: 11.5, color: T.inkMute, fontWeight: 600, letterSpacing: 0.4, textTransform: 'uppercase' }}>When</div>
-              {!useCustomTime && (<div style={{ fontFamily: fonts.serif, fontSize: 20, color: T.ink, marginTop: 2 }}>Now · {new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div>)}
+              <div className="text-[11.5px] font-semibold tracking-[0.4px] text-ink-mute uppercase">When</div>
+              {!useCustomTime && (<div className="mt-0.5 font-serif text-xl text-ink">Now · {new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div>)}
             </div>
-            <button onClick={() => { setUseCustomTime(v => !v); if (!useCustomTime) setCustomTime(toLocalDT(new Date())); }} style={{ padding: '7px 14px', borderRadius: 12, border: `1.5px solid ${useCustomTime ? T.terracotta : T.rule}`, background: useCustomTime ? T.terracottaSoft : 'transparent', color: useCustomTime ? T.terracotta : T.inkSoft, fontFamily: fonts.sans, fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>{useCustomTime ? '✓ Custom' : '✎ Backdate'}</button>
+            <button onClick={() => { setUseCustomTime(v => !v); if (!useCustomTime) setCustomTime(toLocalDT(new Date())); }} className={cn('cursor-pointer rounded-xl border-[1.5px] px-3.5 py-[7px] text-[12.5px] font-bold', useCustomTime ? 'border-terracotta bg-terracotta-soft text-terracotta' : 'border-rule bg-transparent text-ink-soft')}>{useCustomTime ? '✓ Custom' : '✎ Backdate'}</button>
           </div>
           {useCustomTime && (<DateTimeField label="" value={customTime} onChange={setCustomTime} max={toLocalDT(new Date())} />)}
         </Card>
       </div>
-      <div style={{ padding: '14px 16px 0' }}><Card pad={14}><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes (optional)…" style={{ width: '100%', minHeight: 50, background: 'transparent', border: 'none', outline: 'none', fontFamily: fonts.sans, fontSize: 13, color: T.inkSoft, resize: 'none', lineHeight: 1.45 }} /></Card></div>
-      <div style={{ padding: '18px 16px 0', display: 'flex', gap: 10 }}>
-        <button onClick={save} disabled={saving} style={{ ...primaryBtnStyle, flex: 1, background: T.earth }}>{saving ? 'Saving…' : editId ? 'Update change' : 'Save change'}</button>
+      <div className="px-4 pt-3.5"><Card pad={14}><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes (optional)…" className="min-h-[50px] w-full resize-none border-0 bg-transparent text-[13px] leading-[1.45] text-ink-soft outline-none" /></Card></div>
+      <div className="flex gap-2.5 px-4 pt-[18px]">
+        <button onClick={save} disabled={saving} className="inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-2xl border-0 bg-earth px-5 py-3.5 text-sm font-bold tracking-[0.2px] text-card">{saving ? 'Saving…' : editId ? 'Update change' : 'Save change'}</button>
       </div>
     </div>
   );

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { T, fonts } from '../tokens';
-import { Card, Chip, PillBtn, TabBar, iconBtnStyle } from '../components/ui';
+import { T } from '../tokens';
+import { Card, Chip, TabBar } from '../components/ui';
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
 import { formatLength, formatWeight, useUnitPrefs } from '../units';
 import type { BabyMember, Caregiver, DoctorVisit, GrowthEntry } from '../types';
+import { cn } from '../lib/utils';
 
 function ageDisplay(birthDate: string) {
   const diff = Date.now() - new Date(birthDate).getTime();
@@ -60,67 +61,62 @@ export function ProfileScreen() {
   const babyName = baby?.name ?? '…';
   const initial = babyName[0]?.toUpperCase() ?? '?';
   const caregiverColors: Record<string, string> = {};
-  const colorPool = [T.terracotta, T.rose, T.sage, T.sky, T.honey];
+  const colorPool = ['bg-terracotta', 'bg-rose', 'bg-sage', 'bg-sky', 'bg-honey'];
   caregivers.forEach((c, i) => {
     caregiverColors[c.id] = colorPool[i % colorPool.length];
   });
 
   return (
-    <div style={{ width: '100%', minHeight: '100%', background: T.cream, fontFamily: fonts.sans, display: 'flex', flexDirection: 'column', paddingTop: 'max(20px, env(safe-area-inset-top))', boxSizing: 'border-box' }}>
-      <div style={{ padding: '8px 22px 0' }}>
-        <div style={{ color: T.inkMute, fontSize: 12, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>PROFILE</div>
+    <div className="box-border flex min-h-full w-full flex-col bg-cream pt-[max(20px,env(safe-area-inset-top))] font-sans">
+      <div className="px-[22px] pt-2">
+        <div className="text-xs font-semibold uppercase tracking-[0.5px] text-ink-mute">PROFILE</div>
       </div>
 
       {/* Hero card */}
-      <div style={{ padding: '12px 16px 0' }}>
-        <Card pad={0} style={{ overflow: 'hidden' }}>
-          <div style={{ height: 96, background: `linear-gradient(135deg, ${T.terracottaSoft}, ${T.honeySoft})`, position: 'relative' }}>
-            <svg viewBox="0 0 400 96" preserveAspectRatio="none" width="100%" height="100%" style={{ position: 'absolute', inset: 0, opacity: 0.4 }}>
+      <div className="px-4 pt-3">
+        <div className="overflow-hidden rounded-[22px] bg-card shadow-card">
+          <div className="relative h-24 bg-[linear-gradient(135deg,#f1d8c7,#f5e2be)]">
+            <svg viewBox="0 0 400 96" preserveAspectRatio="none" width="100%" height="100%" className="absolute inset-0 opacity-40">
               {Array.from({ length: 12 }).map((_, i) => (
                 <circle key={i} cx={20 + i * 35} cy={20 + (i % 3) * 25} r={2 + (i % 4)} fill={T.terracotta} opacity={0.3 + (i % 5) * 0.1} />
               ))}
             </svg>
           </div>
-          <div style={{ padding: '0 18px 18px', marginTop: -34 }}>
-            <div style={{
-              width: 72, height: 72, borderRadius: 36, background: T.card,
-              border: `4px solid ${T.card}`, boxShadow: T.shadow,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: fonts.serif, fontSize: 30, color: T.terracotta, fontWeight: 600,
-            }}>{initial}</div>
-            <div style={{ fontFamily: fonts.serif, fontSize: 26, color: T.ink, letterSpacing: -0.3, marginTop: 8 }}>{babyName}</div>
+          <div className="-mt-[34px] px-[18px] pb-[18px]">
+            <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full border-4 border-card bg-card font-serif text-[30px] font-semibold text-terracotta shadow-card">{initial}</div>
+            <div className="mt-2 font-serif text-[26px] tracking-[-0.3px] text-ink">{babyName}</div>
             {baby?.birthDate && (
-              <div style={{ fontSize: 12.5, color: T.inkSoft, marginTop: 1 }}>
+              <div className="mt-px text-[12.5px] text-ink-soft">
                 Born {formatDate(baby.birthDate)} · {ageDisplay(baby.birthDate)}{baby.gender ? ` · ${baby.gender}` : ''}
               </div>
             )}
-            <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
               {weight !== '—' && <Chip color={T.terracotta} soft={T.terracottaSoft}>{weight}</Chip>}
               {length !== '—' && <Chip color={T.sage} soft={T.sageSoft}>{length}</Chip>}
               {baby?.bloodType && <Chip color={T.rose} soft={T.roseSoft}>{baby.bloodType} blood</Chip>}
               {baby?.doctorName && <Chip color={T.sky} soft={T.skySoft}>{baby.doctorName}</Chip>}
             </div>
           </div>
-        </Card>
+        </div>
       </div>
 
       {/* Caregivers */}
       {caregivers.length > 0 && (
-        <div style={{ padding: '14px 16px 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 6px 8px' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: T.inkMute, letterSpacing: 0.6, textTransform: 'uppercase' }}>Caregivers</div>
-            <div style={{ fontSize: 11.5, color: T.terracotta, fontWeight: 700, cursor: 'pointer' }}>+ Add</div>
+        <div className="px-4 pt-3.5">
+          <div className="flex items-center justify-between px-1.5 pb-2">
+            <div className="text-[11px] font-bold uppercase tracking-[0.6px] text-ink-mute">Caregivers</div>
+            <div className="cursor-pointer text-[11.5px] font-bold text-terracotta">+ Add</div>
           </div>
           <Card pad={0}>
             {caregivers.map((p, i) => {
-              const col = caregiverColors[p.id] ?? T.sage;
+              const col = caregiverColors[p.id] ?? 'bg-sage';
               const init = p.initials ?? p.name[0]?.toUpperCase() ?? '?';
               return (
-                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderTop: i ? `1px solid ${T.rule}` : 'none' }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 18, background: col, color: T.card, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontFamily: fonts.serif }}>{init}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, color: T.ink }}>{p.name}</div>
-                    <div style={{ fontSize: 11.5, color: T.inkMute }}>{p.role} · {p.permission === 'admin' ? 'Admin' : 'View only'}</div>
+                <div key={p.id} className={cn('flex items-center gap-3 px-3.5 py-3', i && 'border-t border-rule')}>
+                  <div className={cn('flex h-9 w-9 items-center justify-center rounded-full font-serif font-bold text-card', col)}>{init}</div>
+                  <div className="flex-1">
+                    <div className="text-[13.5px] font-bold text-ink">{p.name}</div>
+                    <div className="text-[11.5px] text-ink-mute">{p.role} · {p.permission === 'admin' ? 'Admin' : 'View only'}</div>
                   </div>
                   <Chip color={T.sage} soft={T.sageSoft}>● active</Chip>
                 </div>
@@ -131,24 +127,24 @@ export function ProfileScreen() {
       )}
 
       {/* Sharing */}
-      <div style={{ padding: '14px 16px 0' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: T.inkMute, letterSpacing: 0.6, textTransform: 'uppercase', padding: '0 6px 8px' }}>Sharing</div>
+      <div className="px-4 pt-3.5">
+        <div className="px-1.5 pb-2 text-[11px] font-bold uppercase tracking-[0.6px] text-ink-mute">Sharing</div>
         <Card pad={14}>
-          <div style={{ fontFamily: fonts.serif, fontSize: 18, color: T.ink, letterSpacing: -0.2 }}>Co-parent logging</div>
-          <div style={{ fontSize: 12, color: T.inkSoft, marginTop: 3, lineHeight: 1.4 }}>Invite a signed-in parent by email. They will see {babyName} and can add logs.</div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-            <input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} type="email" placeholder="parent@email.com" style={{ flex: 1, minWidth: 0, padding: '10px 12px', borderRadius: 12, border: `1.5px solid ${T.rule}`, background: T.card, color: T.ink, fontFamily: fonts.sans, fontSize: 13, outline: 'none' }} />
-            <button onClick={inviteParent} disabled={!inviteEmail.trim()} style={{ padding: '10px 14px', borderRadius: 12, border: 'none', background: inviteEmail.trim() ? T.terracotta : T.terracottaSoft, color: inviteEmail.trim() ? T.card : T.terracotta, fontFamily: fonts.sans, fontSize: 12.5, fontWeight: 700, cursor: inviteEmail.trim() ? 'pointer' : 'not-allowed' }}>Invite</button>
+          <div className="font-serif text-lg tracking-[-0.2px] text-ink">Co-parent logging</div>
+          <div className="mt-[3px] text-xs leading-[1.4] text-ink-soft">Invite a signed-in parent by email. They will see {babyName} and can add logs.</div>
+          <div className="mt-3 flex gap-2">
+            <input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} type="email" placeholder="parent@email.com" className="min-w-0 flex-1 rounded-xl border-[1.5px] border-rule bg-card px-3 py-2.5 font-sans text-[13px] text-ink outline-none" />
+            <button onClick={inviteParent} disabled={!inviteEmail.trim()} className={cn('rounded-xl border-0 px-3.5 py-2.5 font-sans text-[12.5px] font-bold', inviteEmail.trim() ? 'cursor-pointer bg-terracotta text-card' : 'cursor-not-allowed bg-terracotta-soft text-terracotta')}>Invite</button>
           </div>
-          {inviteStatus && <div style={{ fontSize: 11.5, color: inviteStatus.startsWith('No') ? '#C0392B' : T.sage, marginTop: 8, fontWeight: 600 }}>{inviteStatus}</div>}
+          {inviteStatus && <div className={cn('mt-2 text-[11.5px] font-semibold', inviteStatus.startsWith('No') ? 'text-[#C0392B]' : 'text-sage')}>{inviteStatus}</div>}
           {members.length > 0 && (
-            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="mt-3 flex flex-col gap-2">
               {members.map(member => (
-                <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 12, background: T.parchment }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 14, background: T.terracottaSoft, color: T.terracotta, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: fonts.serif, fontWeight: 700 }}>{member.name[0]?.toUpperCase() ?? '?'}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 700, color: T.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.name}</div>
-                    <div style={{ fontSize: 10.5, color: T.inkMute, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.email}</div>
+                <div key={member.id} className="flex items-center gap-2.5 rounded-xl bg-parchment px-2.5 py-[9px]">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-terracotta-soft font-serif font-bold text-terracotta">{member.name[0]?.toUpperCase() ?? '?'}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate whitespace-nowrap text-[12.5px] font-bold text-ink">{member.name}</div>
+                    <div className="truncate whitespace-nowrap text-[10.5px] text-ink-mute">{member.email}</div>
                   </div>
                   <Chip color={member.role === 'owner' ? T.terracotta : T.sage} soft={member.role === 'owner' ? T.terracottaSoft : T.sageSoft}>{member.role}</Chip>
                 </div>
@@ -160,35 +156,35 @@ export function ProfileScreen() {
 
       {/* Doctor visits */}
       {latestVisit && (
-        <div style={{ padding: '14px 16px 0' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: T.inkMute, letterSpacing: 0.6, textTransform: 'uppercase', padding: '0 6px 8px' }}>Doctor visits</div>
+        <div className="px-4 pt-3.5">
+          <div className="px-1.5 pb-2 text-[11px] font-bold uppercase tracking-[0.6px] text-ink-mute">Doctor visits</div>
           <Card pad={14}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 38, height: 38, borderRadius: 11, background: T.skySoft, color: T.sky, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ width: 20, height: 20 }}>{I.doc}</div>
+            <div className="flex items-center gap-3">
+              <div className="flex h-[38px] w-[38px] items-center justify-center rounded-[11px] bg-sky-soft text-sky">
+                <div className="h-5 w-5">{I.doc}</div>
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 700, color: T.ink }}>{latestVisit.visitType} · {latestVisit.doctorName}</div>
-                <div style={{ fontSize: 11.5, color: T.inkMute }}>
+              <div className="flex-1">
+                <div className="text-[13.5px] font-bold text-ink">{latestVisit.visitType} · {latestVisit.doctorName}</div>
+                <div className="text-[11.5px] text-ink-mute">
                   {new Date(latestVisit.visitedAt).toLocaleDateString([], { month: 'short', day: 'numeric' })} · {latestVisit.hospital}
                 </div>
               </div>
-              <div style={{ width: 14, height: 14, color: T.inkMute }}>{I.chev}</div>
+              <div className="h-3.5 w-3.5 text-ink-mute">{I.chev}</div>
             </div>
             {latestVisit.notes && (
-              <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 12, background: T.parchment, fontSize: 12, color: T.inkSoft, lineHeight: 1.45 }}>
+              <div className="mt-3 rounded-xl bg-parchment px-3 py-2.5 text-xs leading-[1.45] text-ink-soft">
                 <i>"{latestVisit.notes}"</i>
               </div>
             )}
             {latestVisit.nextAppointment && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, padding: '10px 12px', borderRadius: 12, background: T.honeySoft }}>
+              <div className="mt-3 flex items-center justify-between rounded-xl bg-honey-soft px-3 py-2.5">
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#7C5A21' }}>Next appointment</div>
-                  <div style={{ fontSize: 11, color: '#7C5A21', opacity: 0.85, marginTop: 1 }}>
+                  <div className="text-xs font-bold text-[#7C5A21]">Next appointment</div>
+                  <div className="mt-px text-[11px] text-[#7C5A21] opacity-85">
                     {new Date(latestVisit.nextAppointment).toLocaleDateString([], { month: 'long', day: 'numeric' })} · {latestVisit.doctorName}
                   </div>
                 </div>
-                <PillBtn color='#7C5A21' soft='rgba(255,252,245,0.5)' style={{ padding: '6px 12px', fontSize: 12 }}>Remind</PillBtn>
+                <button className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border-0 bg-card/50 px-3 py-1.5 font-sans text-xs font-semibold tracking-[0.1px] text-[#7C5A21]">Remind</button>
               </div>
             )}
           </Card>
@@ -196,8 +192,8 @@ export function ProfileScreen() {
       )}
 
       {/* Preferences */}
-      <div style={{ padding: '14px 16px 0' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: T.inkMute, letterSpacing: 0.6, textTransform: 'uppercase', padding: '0 6px 8px' }}>Preferences</div>
+      <div className="px-4 pt-3.5">
+        <div className="px-1.5 pb-2 text-[11px] font-bold uppercase tracking-[0.6px] text-ink-mute">Preferences</div>
         <Card pad={0}>
           {[
             { k: 'Milk', v: prefs.milkUnit, ic: I.feed, onClick: () => setPrefs(p => ({ ...p, milkUnit: p.milkUnit === 'ml' ? 'oz' : 'ml' })) },
@@ -207,13 +203,13 @@ export function ProfileScreen() {
             { k: 'Night mode', v: 'Auto · 8 PM – 6 AM', ic: I.moon },
             { k: 'Export data', v: 'CSV / PDF', ic: I.doc },
           ].map((r, i) => (
-            <div key={r.k} onClick={r.onClick} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderTop: i ? `1px solid ${T.rule}` : 'none', cursor: r.onClick ? 'pointer' : 'default' }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: T.parchment, color: T.inkSoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ width: 16, height: 16 }}>{r.ic}</div>
+            <div key={r.k} onClick={r.onClick} className={cn('flex items-center gap-3 px-3.5 py-3', i && 'border-t border-rule', r.onClick ? 'cursor-pointer' : 'cursor-default')}>
+              <div className="flex h-[30px] w-[30px] items-center justify-center rounded-lg bg-parchment text-ink-soft">
+                <div className="h-4 w-4">{r.ic}</div>
               </div>
-              <div style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: T.ink }}>{r.k}</div>
-              <div style={{ fontSize: 12, color: T.inkSoft, textTransform: r.onClick ? 'uppercase' : 'none', fontFamily: r.onClick ? fonts.mono : fonts.sans }}>{r.v}</div>
-              <div style={{ width: 12, height: 12, color: T.inkMute }}>{I.chev}</div>
+              <div className="flex-1 text-[13.5px] font-semibold text-ink">{r.k}</div>
+              <div className={cn('text-xs text-ink-soft', r.onClick ? 'font-mono uppercase' : 'font-sans')}>{r.v}</div>
+              <div className="h-3 w-3 text-ink-mute">{I.chev}</div>
             </div>
           ))}
         </Card>

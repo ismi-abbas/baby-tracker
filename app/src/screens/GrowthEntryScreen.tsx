@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { T, fonts } from '../tokens';
-import { BackBtn, Card, iconBtnStyle, primaryBtnStyle, useNav, DateTimeField } from '../components/ui';
+import { T } from '../tokens';
+import { BackBtn, Card, useNav, DateTimeField } from '../components/ui';
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
 import { useEditRecord } from '../hooks/useEditRecord';
 import { cmToDisplay, lengthDeltaToCm, gramsToDisplay, useUnitPrefs, weightDeltaToGrams } from '../units';
 import type { GrowthEntry } from '../types';
+import { cn } from '../lib/utils';
 
 function toLocalDate(d: Date) {
   const p = (n: number) => String(n).padStart(2, '0');
@@ -55,50 +56,50 @@ export function GrowthEntryScreen() {
   const weightSteps = prefs.weightUnit === 'lb' ? [-0.5, -0.1, 0.1, 0.5] : [-0.1, -0.05, 0.05, 0.1];
   const lengthSteps = prefs.lengthUnit === 'in' ? [-1, -0.5, 0.5, 1] : [-1, -0.5, 0.5, 1];
   const metrics = [
-    { key: 'weight' as const, label: 'Weight', val: weightG ? gramsToDisplay(weightG, prefs.weightUnit).toFixed(prefs.weightUnit === 'lb' ? 1 : 2) : '—', unit: prefs.weightUnit, color: T.rose, soft: T.roseSoft, steps: weightSteps },
-    { key: 'length' as const, label: 'Length', val: lengthCm ? cmToDisplay(lengthCm, prefs.lengthUnit).toFixed(1) : '—', unit: prefs.lengthUnit, color: T.sage, soft: T.sageSoft, steps: lengthSteps },
-    { key: 'head' as const, label: 'Head', val: headCm ? cmToDisplay(headCm, prefs.lengthUnit).toFixed(1) : '—', unit: prefs.lengthUnit, color: T.terracotta, soft: T.terracottaSoft, steps: lengthSteps },
+    { key: 'weight' as const, label: 'Weight', val: weightG ? gramsToDisplay(weightG, prefs.weightUnit).toFixed(prefs.weightUnit === 'lb' ? 1 : 2) : '—', unit: prefs.weightUnit, colorClass: 'text-rose', softClass: 'bg-rose-soft', positiveClass: 'border-rose bg-rose-soft text-rose', steps: weightSteps },
+    { key: 'length' as const, label: 'Length', val: lengthCm ? cmToDisplay(lengthCm, prefs.lengthUnit).toFixed(1) : '—', unit: prefs.lengthUnit, colorClass: 'text-sage', softClass: 'bg-sage-soft', positiveClass: 'border-sage bg-sage-soft text-sage', steps: lengthSteps },
+    { key: 'head' as const, label: 'Head', val: headCm ? cmToDisplay(headCm, prefs.lengthUnit).toFixed(1) : '—', unit: prefs.lengthUnit, colorClass: 'text-terracotta', softClass: 'bg-terracotta-soft', positiveClass: 'border-terracotta bg-terracotta-soft text-terracotta', steps: lengthSteps },
   ];
 
   return (
-    <div style={{ width: '100%', minHeight: '100%', background: T.cream, fontFamily: fonts.sans, display: 'flex', flexDirection: 'column', paddingTop: 'max(20px, env(safe-area-inset-top))', boxSizing: 'border-box' }}>
-      <div style={{ padding: '6px 20px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div className="box-border flex min-h-full w-full flex-col bg-cream pt-[max(20px,env(safe-area-inset-top))] font-sans">
+      <div className="flex items-center gap-2.5 px-5 pt-1.5">
         <BackBtn />
-        <div style={{ flex: 1, textAlign: 'center', fontSize: 13, fontWeight: 700, color: T.ink, letterSpacing: 0.4, textTransform: 'uppercase' }}>{editId ? 'Edit Measurement' : 'New Measurement'}</div>
-        <button style={iconBtnStyle}><div style={{ width: 18, height: 18, color: T.ink }}>{I.measure}</div></button>
+        <div className="flex-1 text-center text-[13px] font-bold tracking-[0.4px] text-ink uppercase">{editId ? 'Edit Measurement' : 'New Measurement'}</div>
+        <button className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-xl border-0 bg-black/4"><div className="h-[18px] w-[18px] text-ink">{I.measure}</div></button>
       </div>
-      <div style={{ padding: '14px 22px 0' }}>
-        <div style={{ fontFamily: fonts.serif, fontSize: 26, color: T.ink, letterSpacing: -0.4 }}>How's <span style={{ fontStyle: 'italic', color: T.rose }}>{babyName}</span> growing?</div>
+      <div className="px-[22px] pt-3.5">
+        <div className="font-serif text-[26px] tracking-[-0.4px] text-ink">How's <span className="italic text-rose">{babyName}</span> growing?</div>
       </div>
-      <div style={{ padding: '14px 16px 0', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-        <div style={{ flex: 1 }}><DateTimeField label="Measured on" value={measuredOn} onChange={setMeasuredOn} type="date" max={toLocalDate(new Date())} /></div>
-        <div style={{ padding: '8px 12px', borderRadius: 9, background: 'rgba(0,0,0,0.05)', flexShrink: 0, fontFamily: fonts.mono, fontSize: 11.5, fontWeight: 700, color: T.inkMute }}>{prefs.weightUnit}/{prefs.lengthUnit}</div>
+      <div className="flex items-end gap-2.5 px-4 pt-3.5">
+        <div className="flex-1"><DateTimeField label="Measured on" value={measuredOn} onChange={setMeasuredOn} type="date" max={toLocalDate(new Date())} /></div>
+        <div className="shrink-0 rounded-[9px] bg-black/5 px-3 py-2 font-mono text-[11.5px] font-bold text-ink-mute">{prefs.weightUnit}/{prefs.lengthUnit}</div>
       </div>
-      <div style={{ padding: '12px 16px 0' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: T.inkMute, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8, paddingLeft: 4 }}>Visit type</div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {(['home', 'doctor'] as const).map(v => (<button key={v} onClick={() => setVisitType(v)} style={{ flex: 1, padding: '10px', borderRadius: 12, cursor: 'pointer', border: `1.5px solid ${visitType === v ? T.rose : T.rule}`, background: visitType === v ? T.roseSoft : T.card, color: visitType === v ? T.rose : T.inkSoft, fontFamily: fonts.sans, fontSize: 13, fontWeight: 600, textTransform: 'capitalize' }}>{v === 'doctor' ? '🏥 Doctor visit' : '🏠 At home'}</button>))}
+      <div className="px-4 pt-3">
+        <div className="mb-2 pl-1 text-[11px] font-bold tracking-[0.5px] text-ink-mute uppercase">Visit type</div>
+        <div className="flex gap-2">
+          {(['home', 'doctor'] as const).map(v => (<button key={v} onClick={() => setVisitType(v)} className={cn('flex-1 cursor-pointer rounded-xl border-[1.5px] p-2.5 text-[13px] font-semibold capitalize', visitType === v ? 'border-rose bg-rose-soft text-rose' : 'border-rule bg-card text-ink-soft')}>{v === 'doctor' ? '🏥 Doctor visit' : '🏠 At home'}</button>))}
         </div>
       </div>
-      <div style={{ padding: '12px 16px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div className="flex flex-col gap-2.5 px-4 pt-3">
         {metrics.map(r => (
           <Card key={r.key} pad={14}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ width: 42, height: 42, borderRadius: 14, background: r.soft, color: r.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ width: 20, height: 20 }}>{I.measure}</div></div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11.5, color: T.inkMute, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>{r.label}</div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginTop: 1 }}><span style={{ fontFamily: fonts.serif, fontSize: 28, fontWeight: 500, color: T.ink, letterSpacing: -0.5, fontVariantNumeric: 'tabular-nums' }}>{r.val}</span><span style={{ fontSize: 12, color: T.inkMute, fontStyle: 'italic' }}>{r.unit}</span></div>
+            <div className="flex items-center gap-3.5">
+              <div className={cn('flex h-[42px] w-[42px] items-center justify-center rounded-[14px]', r.softClass, r.colorClass)}><div className="h-5 w-5">{I.measure}</div></div>
+              <div className="flex-1">
+                <div className="text-[11.5px] font-semibold tracking-[0.5px] text-ink-mute uppercase">{r.label}</div>
+                <div className="mt-px flex items-baseline gap-1"><span className="font-serif text-[28px] font-medium tracking-[-0.5px] text-ink tabular-nums">{r.val}</span><span className="text-xs italic text-ink-mute">{r.unit}</span></div>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
-              {r.steps.map(delta => (<button key={String(delta)} onClick={() => adjust(r.key, delta)} style={{ flex: 1, padding: '8px 0', borderRadius: 10, cursor: 'pointer', border: `1px solid ${delta > 0 ? r.color : T.rule}`, background: delta > 0 ? r.soft : T.parchment, color: delta > 0 ? r.color : T.inkSoft, fontFamily: fonts.mono, fontSize: 11, fontWeight: 600 }}>{delta > 0 ? `+${delta}` : delta}</button>))}
+            <div className="mt-3 flex gap-1.5">
+              {r.steps.map(delta => (<button key={String(delta)} onClick={() => adjust(r.key, delta)} className={cn('flex-1 cursor-pointer rounded-[10px] border py-2 font-mono text-[11px] font-semibold', delta > 0 ? r.positiveClass : 'border-rule bg-parchment text-ink-soft')}>{delta > 0 ? `+${delta}` : delta}</button>))}
             </div>
           </Card>
         ))}
       </div>
-      <div style={{ padding: '12px 16px 0' }}><Card pad={14}><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Visit notes or milestones…" style={{ width: '100%', minHeight: 50, background: 'transparent', border: 'none', outline: 'none', fontFamily: fonts.sans, fontSize: 13, color: T.inkSoft, resize: 'none', lineHeight: 1.45 }} /></Card></div>
-      <div style={{ padding: '14px 16px 0', display: 'flex', gap: 10 }}>
-        <button onClick={save} disabled={saving || (!weightG && !lengthCm && !headCm)} style={{ ...primaryBtnStyle, flex: 1, background: T.rose }}>{saving ? 'Saving…' : editId ? 'Update measurement' : 'Save measurement'}</button>
+      <div className="px-4 pt-3"><Card pad={14}><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Visit notes or milestones…" className="min-h-[50px] w-full resize-none border-0 bg-transparent text-[13px] leading-[1.45] text-ink-soft outline-none" /></Card></div>
+      <div className="flex gap-2.5 px-4 pt-3.5">
+        <button onClick={save} disabled={saving || (!weightG && !lengthCm && !headCm)} className="inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-2xl border-0 bg-rose px-5 py-3.5 text-sm font-bold tracking-[0.2px] text-card">{saving ? 'Saving…' : editId ? 'Update measurement' : 'Save measurement'}</button>
       </div>
     </div>
   );

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { T, fonts } from '../tokens';
-import { Card, Chip, TabBar, iconBtnStyle, useNav } from '../components/ui';
+import { T } from '../tokens';
+import { Card, TabBar, useNav } from '../components/ui';
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
 import { cmToDisplay, gramsToDisplay, type LengthUnit, type WeightUnit, useUnitPrefs } from '../units';
 import type { GrowthEntry } from '../types';
+import { cn } from '../lib/utils';
 
 type Metric = 'weight' | 'length' | 'head';
 
@@ -16,7 +17,7 @@ const WHO_P97 = [4.4,5.8,7.1,8.0,8.7,9.3,9.8,10.2,10.6,10.9,11.2,11.5,11.8];
 
 function growthConfig(metric: Metric, weightUnit: WeightUnit, lengthUnit: LengthUnit) {
   if (metric === 'weight') return {
-    label: 'Weight', unit: weightUnit, color: T.rose,
+    label: 'Weight', unit: weightUnit, color: T.rose, legendClass: 'bg-rose',
     getVal: (e: GrowthEntry) => gramsToDisplay(e.weightG ?? 0, weightUnit),
     defaultMin: gramsToDisplay(2000, weightUnit), defaultMax: gramsToDisplay(12500, weightUnit),
     delta: (a: GrowthEntry, b: GrowthEntry) => {
@@ -27,7 +28,7 @@ function growthConfig(metric: Metric, weightUnit: WeightUnit, lengthUnit: Length
   };
   const field = metric === 'length' ? 'lengthCm' : 'headCm';
   return {
-    label: metric === 'length' ? 'Length' : 'Head', unit: lengthUnit, color: metric === 'length' ? T.sage : T.terracotta,
+    label: metric === 'length' ? 'Length' : 'Head', unit: lengthUnit, color: metric === 'length' ? T.sage : T.terracotta, legendClass: metric === 'length' ? 'bg-sage' : 'bg-terracotta',
     getVal: (e: GrowthEntry) => cmToDisplay((e[field] as number | undefined) ?? 0, lengthUnit),
     defaultMin: cmToDisplay(metric === 'length' ? 40 : 25, lengthUnit), defaultMax: cmToDisplay(metric === 'length' ? 90 : 55, lengthUnit),
     delta: (a: GrowthEntry, b: GrowthEntry) => {
@@ -87,42 +88,42 @@ export function GrowthChartScreen() {
   const babyName = baby?.name?.split(' ')[0] ?? '…';
 
   return (
-    <div style={{ width: '100%', minHeight: '100%', background: T.cream, fontFamily: fonts.sans, display: 'flex', flexDirection: 'column', paddingTop: 'max(20px, env(safe-area-inset-top))', boxSizing: 'border-box' }}>
-      <div style={{ padding: '6px 20px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ color: T.inkMute, fontSize: 12, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>GROWTH</div>
+    <div className="box-border flex min-h-full w-full flex-col bg-cream pt-[max(20px,env(safe-area-inset-top))] font-sans">
+      <div className="flex items-center gap-2.5 px-5 pt-1.5">
+        <div className="flex-1">
+          <div className="text-xs font-semibold uppercase tracking-[0.5px] text-ink-mute">GROWTH</div>
         </div>
-        <button onClick={() => nav('growth-entry')} style={iconBtnStyle}><div style={{ width: 18, height: 18, color: T.ink }}>{I.plus}</div></button>
+        <button onClick={() => nav('growth-entry')} className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-xl border-0 bg-black/4"><div className="h-[18px] w-[18px] text-ink">{I.plus}</div></button>
       </div>
 
-      <div style={{ padding: '12px 16px 0' }}>
-        <div style={{ display: 'flex', padding: 4, borderRadius: 14, background: 'rgba(0,0,0,0.04)', gap: 2 }}>
+      <div className="px-4 pt-3">
+        <div className="flex gap-0.5 rounded-[14px] bg-black/4 p-1">
           {(['weight', 'length', 'head'] as Metric[]).map((m) => {
             const active = metric === m;
             const mc = growthConfig(m, prefs.weightUnit, prefs.lengthUnit);
             return (
-              <div key={m} onClick={() => setMetric(m)} style={{ flex: 1, padding: '8px 10px', borderRadius: 11, textAlign: 'center', fontSize: 12, fontWeight: 700, cursor: 'pointer', background: active ? T.card : 'transparent', color: active ? mc.color : T.inkSoft, boxShadow: active ? '0 1px 2px rgba(0,0,0,0.04)' : 'none', transition: 'all 0.15s' }}>{mc.label}</div>
+              <div key={m} onClick={() => setMetric(m)} className={cn('flex-1 cursor-pointer rounded-[11px] px-2.5 py-2 text-center text-xs font-bold transition-all duration-150', active ? 'bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04)]' : 'bg-transparent text-ink-soft', active && (mc.color === T.rose ? 'text-rose' : mc.color === T.sage ? 'text-sage' : 'text-terracotta'))}>{mc.label}</div>
             );
           })}
         </div>
       </div>
 
-      <div style={{ padding: '14px 22px 0', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+      <div className="flex items-end justify-between px-[22px] pt-3.5">
         <div>
-          <div style={{ fontSize: 11, color: T.inkMute, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>{cfg.label} · latest</div>
-          <div style={{ fontFamily: fonts.serif, fontSize: 44, color: T.ink, fontWeight: 500, lineHeight: 1, letterSpacing: -1, marginTop: 2 }}>
-            {latestVal > 0 ? latestVal.toFixed(1) : '—'}<span style={{ fontSize: 16, color: T.inkMute, fontStyle: 'italic', marginLeft: 4 }}>{cfg.unit}</span>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.5px] text-ink-mute">{cfg.label} · latest</div>
+          <div className="mt-0.5 font-serif text-[44px] font-medium leading-none tracking-[-1px] text-ink">
+            {latestVal > 0 ? latestVal.toFixed(1) : '—'}<span className="ml-1 text-base italic text-ink-mute">{cfg.unit}</span>
           </div>
           {deltaStr !== null && (
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6, fontSize: 12, color: T.sage, fontWeight: 600 }}>
+            <div className="mt-1.5 inline-flex items-center gap-[5px] text-xs font-semibold text-sage">
               ▲ {deltaStr}
             </div>
           )}
         </div>
-        {metric === 'weight' && <Chip color={T.rose} soft={T.roseSoft} style={{ padding: '6px 12px', fontSize: 12.5 }}>~50th percentile</Chip>}
+        {metric === 'weight' && <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-soft px-3 py-1.5 font-sans text-[12.5px] font-semibold tracking-[0.2px] text-rose">~50th percentile</span>}
       </div>
 
-      <div style={{ padding: '14px 16px 0' }}>
+      <div className="px-4 pt-3.5">
         <Card pad={14}>
           <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="180">
             {(() => {
@@ -165,34 +166,34 @@ export function GrowthChartScreen() {
               <text key={x} x={px(x)-4} y={H-2} fontFamily="JetBrains Mono" fontSize="8" fill={T.inkMute}>{x}m</text>
             ))}
           </svg>
-          <div style={{ display: 'flex', gap: 12, marginTop: 8, fontSize: 10.5, color: T.inkMute, flexWrap: 'wrap' }}>
-            <span><span style={{ display: 'inline-block', width: 10, height: 2, background: cfg.color, verticalAlign: 'middle', marginRight: 4 }}/> {babyName}</span>
+          <div className="mt-2 flex flex-wrap gap-3 text-[10.5px] text-ink-mute">
+            <span><span className={cn('mr-1 inline-block h-0.5 w-2.5 align-middle', cfg.legendClass)}/> {babyName}</span>
             {metric === 'weight' && <>
-              <span><span style={{ display: 'inline-block', width: 10, height: 2, background: T.rose, verticalAlign: 'middle', marginRight: 4 }}/> WHO 50th</span>
-              <span><span style={{ display: 'inline-block', width: 10, height: 1, borderTop: `1px dashed ${T.inkMute}`, verticalAlign: 'middle', marginRight: 4 }}/> 3rd / 97th</span>
+              <span><span className="mr-1 inline-block h-0.5 w-2.5 bg-rose align-middle"/> WHO 50th</span>
+              <span><span className="mr-1 inline-block h-px w-2.5 border-t border-dashed border-ink-mute align-middle"/> 3rd / 97th</span>
             </>}
           </div>
         </Card>
       </div>
 
-      <div style={{ padding: '14px 16px 0' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: T.inkMute, letterSpacing: 0.6, textTransform: 'uppercase', padding: '0 6px 8px' }}>History</div>
+      <div className="px-4 pt-3.5">
+        <div className="px-1.5 pb-2 text-[11px] font-bold uppercase tracking-[0.6px] text-ink-mute">History</div>
         <Card pad={0}>
           {history.length === 0 ? (
-            <div style={{ padding: '20px 14px', textAlign: 'center', color: T.inkMute, fontSize: 13 }}>No measurements yet</div>
+            <div className="px-3.5 py-5 text-center text-[13px] text-ink-mute">No measurements yet</div>
           ) : history.map((e, i) => {
             const val = cfg.getVal(e);
             const prevEntry = history[i+1];
             const prevVal = prevEntry ? cfg.getVal(prevEntry) : null;
             const diffStr = prevVal !== null && val > 0 && prevVal > 0 ? cfg.delta(e, prevEntry!) : null;
             return (
-              <div key={e.id} onClick={() => navigate({ to: '/log/growth-entry', search: { id: e.id } as never })} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderTop: i ? `1px solid ${T.rule}` : 'none', cursor: 'pointer' }}>
-                <div style={{ fontSize: 12.5, color: T.inkSoft, flex: 1 }}>
+              <div key={e.id} onClick={() => navigate({ to: '/log/growth-entry', search: { id: e.id } as never })} className={cn('flex cursor-pointer items-center gap-3 px-3.5 py-3', i && 'border-t border-rule')}>
+                <div className="flex-1 text-[12.5px] text-ink-soft">
                   {new Date(e.measuredAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                   {e.visitType === 'doctor' ? ' · Dr. visit' : ''}
                 </div>
-                <div style={{ fontFamily: fonts.serif, fontSize: 16, color: val > 0 ? T.ink : T.inkMute, fontWeight: 500 }}>{val > 0 ? val.toFixed(metric === 'weight' && prefs.weightUnit === 'kg' ? 2 : 1) : '—'} <span style={{ fontSize: 11, color: T.inkMute, fontStyle: 'italic' }}>{cfg.unit}</span></div>
-                <div style={{ width: 64, textAlign: 'right', fontSize: 11.5, fontWeight: 600, color: diffStr ? T.sage : T.inkMute }}>
+                <div className={cn('font-serif text-base font-medium', val > 0 ? 'text-ink' : 'text-ink-mute')}>{val > 0 ? val.toFixed(metric === 'weight' && prefs.weightUnit === 'kg' ? 2 : 1) : '—'} <span className="text-[11px] italic text-ink-mute">{cfg.unit}</span></div>
+                <div className={cn('w-16 text-right text-[11.5px] font-semibold', diffStr ? 'text-sage' : 'text-ink-mute')}>
                   {diffStr ?? '—'}
                 </div>
               </div>

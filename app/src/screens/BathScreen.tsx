@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { T, fonts } from '../tokens';
-import { BackBtn, Card, iconBtnStyle, primaryBtnStyle, useNav, DateTimeField } from '../components/ui';
+import { T } from '../tokens';
+import { BackBtn, Card, useNav, DateTimeField } from '../components/ui';
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
 import { useEditRecord } from '../hooks/useEditRecord';
 import type { Bath } from '../types';
+import { cn } from '../lib/utils';
 
 function toLocalDT(d: Date) {
   const p = (n: number) => String(n).padStart(2, '0');
@@ -46,16 +47,16 @@ export function BathScreen() {
   ];
 
   return (
-    <div style={{ width: '100%', minHeight: '100%', background: T.cream, fontFamily: fonts.sans, display: 'flex', flexDirection: 'column', paddingTop: 'max(20px, env(safe-area-inset-top))', boxSizing: 'border-box' }}>
-      <div style={{ padding: '6px 20px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div className="box-border flex min-h-full w-full flex-col bg-cream pt-[max(20px,env(safe-area-inset-top))] font-sans">
+      <div className="flex items-center gap-2.5 px-5 pt-1.5">
         <BackBtn />
-        <div style={{ flex: 1, textAlign: 'center', fontSize: 13, fontWeight: 700, color: T.ink, letterSpacing: 0.4, textTransform: 'uppercase' }}>{editId ? 'Edit Bath' : 'Bath Time'}</div>
-        <button style={iconBtnStyle}><div style={{ width: 18, height: 18, color: T.ink }}>{I.doc}</div></button>
+        <div className="flex-1 text-center text-[13px] font-bold tracking-[0.4px] text-ink uppercase">{editId ? 'Edit Bath' : 'Bath Time'}</div>
+        <button className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-xl border-0 bg-black/4"><div className="h-[18px] w-[18px] text-ink">{I.doc}</div></button>
       </div>
       {!editId && (
-        <div style={{ padding: '18px 16px 0' }}>
-          <Card pad={0} style={{ overflow: 'hidden', background: T.skySoft }}>
-            <div style={{ position: 'relative', height: 110 }}>
+        <div className="px-4 pt-[18px]">
+          <div className="overflow-hidden rounded-[22px] bg-sky-soft shadow-card">
+            <div className="relative h-[110px]">
               <svg width="100%" height="100%" viewBox="0 0 360 110" preserveAspectRatio="none">
                 <path d="M0 75 Q60 60 120 75 T240 75 T360 75 L360 110 L0 110 Z" fill={T.sky} opacity="0.5"/>
                 <path d="M0 85 Q60 70 120 85 T240 85 T360 85 L360 110 L0 110 Z" fill={T.sky} opacity="0.7"/>
@@ -63,29 +64,29 @@ export function BathScreen() {
                 <g transform="translate(170,42)"><ellipse cx="0" cy="14" rx="22" ry="11" fill={T.honey}/><circle cx="14" cy="2" r="11" fill={T.honey}/><path d="M22 2 L32 6 L22 8 Z" fill={T.terracotta}/><circle cx="16" cy="0" r="1.5" fill={T.ink}/></g>
               </svg>
             </div>
-            <div style={{ padding: '8px 18px 12px' }}><div style={{ fontFamily: fonts.serif, fontSize: 18, color: T.ink }}>Splash o'clock</div></div>
-          </Card>
+            <div className="px-[18px] pt-2 pb-3"><div className="font-serif text-lg text-ink">Splash o'clock</div></div>
+          </div>
         </div>
       )}
-      <div style={{ padding: '14px 16px 0' }}>
+      <div className="px-4 pt-3.5">
         <Card pad={14}><DateTimeField label="When" value={bathedAt} onChange={setBathedAt} max={toLocalDT(new Date())} /></Card>
       </div>
       {settings.map(({ k, ic, opts, val, set }) => (
-        <div key={k} style={{ padding: '10px 16px 0' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: T.inkMute, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8, paddingLeft: 4 }}>{k}</div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {opts.map(opt => (<button key={opt} onClick={() => set(opt)} style={{ padding: '8px 14px', borderRadius: 12, cursor: 'pointer', border: `1.5px solid ${val === opt ? T.sky : T.rule}`, background: val === opt ? T.skySoft : T.card, color: val === opt ? T.sky : T.inkSoft, fontFamily: fonts.sans, fontSize: 12.5, fontWeight: 600, transition: 'all 0.12s' }}>{k === 'Water temp' ? `${opt} °C` : k === 'Duration' ? `${opt} min` : opt}</button>))}
+        <div key={k} className="px-4 pt-2.5">
+          <div className="mb-2 pl-1 text-[11px] font-bold tracking-[0.5px] text-ink-mute uppercase">{k}</div>
+          <div className="flex flex-wrap gap-1.5">
+            {opts.map(opt => (<button key={opt} onClick={() => set(opt)} className={cn('cursor-pointer rounded-xl border-[1.5px] px-3.5 py-2 text-[12.5px] font-semibold transition-all duration-150', val === opt ? 'border-sky bg-sky-soft text-sky' : 'border-rule bg-card text-ink-soft')}>{k === 'Water temp' ? `${opt} °C` : k === 'Duration' ? `${opt} min` : opt}</button>))}
           </div>
         </div>
       ))}
-      <div style={{ padding: '10px 16px 0' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: T.inkMute, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8, paddingLeft: 4 }}>Soap</div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {[true, false].map(v => (<button key={String(v)} onClick={() => setSoapUsed(v)} style={{ flex: 1, padding: '10px 0', borderRadius: 12, cursor: 'pointer', border: `1.5px solid ${soapUsed === v ? T.sky : T.rule}`, background: soapUsed === v ? T.skySoft : T.card, color: soapUsed === v ? T.sky : T.inkSoft, fontFamily: fonts.sans, fontSize: 13, fontWeight: 600 }}>{v ? '🧼 Yes' : '🚿 No soap'}</button>))}
+      <div className="px-4 pt-2.5">
+        <div className="mb-2 pl-1 text-[11px] font-bold tracking-[0.5px] text-ink-mute uppercase">Soap</div>
+        <div className="flex gap-2">
+          {[true, false].map(v => (<button key={String(v)} onClick={() => setSoapUsed(v)} className={cn('flex-1 cursor-pointer rounded-xl border-[1.5px] py-2.5 text-[13px] font-semibold', soapUsed === v ? 'border-sky bg-sky-soft text-sky' : 'border-rule bg-card text-ink-soft')}>{v ? '🧼 Yes' : '🚿 No soap'}</button>))}
         </div>
       </div>
-      <div style={{ padding: '18px 16px 0', display: 'flex', gap: 10 }}>
-        <button onClick={save} disabled={saving} style={{ ...primaryBtnStyle, flex: 1, background: T.sky }}>{saving ? 'Saving…' : editId ? 'Update bath' : 'Save bath'}</button>
+      <div className="flex gap-2.5 px-4 pt-[18px]">
+        <button onClick={save} disabled={saving} className="inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-2xl border-0 bg-sky px-5 py-3.5 text-sm font-bold tracking-[0.2px] text-card">{saving ? 'Saving…' : editId ? 'Update bath' : 'Save bath'}</button>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { T, fonts } from '../tokens';
-import { BackBtn, CircularTimer, useTimer, iconBtnStyle, useNav, Chip, EntryModeToggle, DateTimeField, Card } from '../components/ui';
+import { T } from '../tokens';
+import { BackBtn, CircularTimer, useTimer, useNav, Chip, EntryModeToggle, DateTimeField, Card } from '../components/ui';
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
 import { useEditRecord } from '../hooks/useEditRecord';
@@ -74,26 +74,27 @@ export function PumpingScreen() {
   const amountSteps = prefs.milkUnit === 'oz' ? [-1, -0.5, 0.5, 1] : [-10, -5, 5, 10];
 
   return (
-    <div style={{ width: '100%', minHeight: '100%', background: T.cream, fontFamily: fonts.sans, display: 'flex', flexDirection: 'column', paddingTop: 'max(20px, env(safe-area-inset-top))', boxSizing: 'border-box' }}>
-      <div style={{ padding: '6px 20px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div className="box-border flex min-h-full w-full flex-col bg-cream pt-[max(20px,env(safe-area-inset-top))] font-sans">
+      <div className="flex items-center gap-2.5 px-5 pt-1.5">
         <BackBtn />
-        <div style={{ flex: 1, textAlign: 'center', fontSize: 13, fontWeight: 700, color: T.ink, letterSpacing: 0.4, textTransform: 'uppercase' }}>{editId ? 'Edit Pumping' : 'Pumping · Mom'}</div>
-        <button style={iconBtnStyle}><div style={{ width: 18, height: 18, color: T.ink }}>{I.doc}</div></button>
+        <div className="flex-1 text-center text-[13px] font-bold tracking-[0.4px] text-ink uppercase">{editId ? 'Edit Pumping' : 'Pumping · Mom'}</div>
+        <button className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-xl border-0 bg-black/4"><div className="h-[18px] w-[18px] text-ink">{I.doc}</div></button>
       </div>
-      <div style={{ padding: '10px 0', display: 'flex', justifyContent: 'center' }}>
+      <div className="flex justify-center py-2.5">
         <EntryModeToggle mode={entryMode} onChange={m => { if (!running) setEntryMode(m); }} />
       </div>
-      {entryMode === 'live' && (<div style={{ padding: '8px 0', display: 'flex', justifyContent: 'center' }}><CircularTimer color={T.honey} soft={T.honeySoft} elapsed={elapsed} sub="Double pump" running={running} /></div>)}
-      {entryMode === 'manual' && (<div style={{ padding: '0 16px 12px' }}><Card pad={16} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}><DateTimeField label="Session started" value={manualStart} onChange={setManualStart} /><DateTimeField label="Session ended" value={manualEnd} onChange={setManualEnd} /></Card></div>)}
-      <div style={{ padding: '0 16px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      {entryMode === 'live' && (<div className="flex justify-center py-2"><CircularTimer color={T.honey} soft={T.honeySoft} elapsed={elapsed} sub="Double pump" running={running} /></div>)}
+      {entryMode === 'manual' && (<div className="px-4 pb-3"><Card pad={16}><div className="flex flex-col gap-3.5"><DateTimeField label="Session started" value={manualStart} onChange={setManualStart} /><DateTimeField label="Session ended" value={manualEnd} onChange={setManualEnd} /></div></Card></div>)}
+      <div className="px-4">
+        <div className="grid grid-cols-2 gap-2.5">
           {(['left', 'right'] as const).map(side => {
             const vol = side === 'left' ? leftMl : rightMl;
             const displayVol = prefs.milkUnit === 'oz' ? mlToDisplay(vol, prefs.milkUnit).toFixed(1) : String(vol);
+            const pumpPercent = Math.min(100, (vol / 120) * 100);
             return (
-              <div key={side} style={{ padding: 14, borderRadius: 18, background: T.card, border: `1px solid ${T.rule}` }}>
-                <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: T.inkMute, marginBottom: 4 }}>{side.charAt(0).toUpperCase() + side.slice(1)}</div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+              <div key={side} className="rounded-[18px] border border-rule bg-card p-3.5">
+                <div className="mb-1 text-[11.5px] font-bold tracking-[0.6px] text-ink-mute uppercase">{side.charAt(0).toUpperCase() + side.slice(1)}</div>
+                <div className="flex items-baseline gap-1">
                   <input
                     type="number"
                     min="0"
@@ -101,34 +102,36 @@ export function PumpingScreen() {
                     inputMode="decimal"
                     value={displayVol}
                     onChange={e => setVolume(side, e.target.value)}
-                    style={{ width: 70, border: 'none', outline: 'none', background: 'transparent', fontFamily: fonts.serif, fontSize: 28, fontWeight: 500, color: T.ink, fontVariantNumeric: 'tabular-nums', padding: 0 }}
+                    className="w-[70px] border-0 bg-transparent p-0 font-serif text-[28px] font-medium text-ink tabular-nums outline-none"
                   />
-                  <span style={{ fontSize: 13, color: T.inkMute, fontStyle: 'italic' }}>{prefs.milkUnit}</span>
+                  <span className="text-[13px] italic text-ink-mute">{prefs.milkUnit}</span>
                 </div>
-                <div style={{ height: 5, borderRadius: 3, background: T.honeySoft, marginTop: 8, overflow: 'hidden' }}><div style={{ width: `${Math.min(100, (vol / 120) * 100)}%`, height: '100%', background: T.honey, transition: 'width 0.2s' }} /></div>
-                <div style={{ display: 'flex', gap: 4, marginTop: 10 }}>
-                  {amountSteps.map(d => (<button key={d} onClick={() => adjust(side, d)} style={{ flex: 1, padding: '5px 0', borderRadius: 9, border: `1px solid ${T.rule}`, background: T.parchment, color: T.ink, fontFamily: fonts.mono, fontWeight: 600, fontSize: 10.5, cursor: 'pointer' }}>{d > 0 ? `+${d}` : d}</button>))}
+                <svg className="mt-2 block h-[5px] w-full overflow-hidden rounded-[3px] bg-honey-soft" viewBox="0 0 100 5" preserveAspectRatio="none" aria-hidden="true">
+                  <rect width={pumpPercent} height="5" fill={T.honey} />
+                </svg>
+                <div className="mt-2.5 flex gap-1">
+                  {amountSteps.map(d => (<button key={d} onClick={() => adjust(side, d)} className="flex-1 cursor-pointer rounded-[9px] border border-rule bg-parchment py-[5px] font-mono text-[10.5px] font-semibold text-ink">{d > 0 ? `+${d}` : d}</button>))}
                 </div>
               </div>
             );
           })}
         </div>
-        <div style={{ marginTop: 12, padding: '12px 16px', borderRadius: 16, background: T.honeySoft, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#7C5A21' }}>Total</div>
-          <div style={{ fontFamily: fonts.serif, fontSize: 22, color: '#7C5A21', fontWeight: 600 }}>{formatMilk(leftMl + rightMl, prefs.milkUnit)}</div>
+        <div className="mt-3 flex items-center justify-between rounded-2xl bg-honey-soft px-4 py-3">
+          <div className="text-[13px] font-bold text-[#7C5A21]">Total</div>
+          <div className="font-serif text-[22px] font-semibold text-[#7C5A21]">{formatMilk(leftMl + rightMl, prefs.milkUnit)}</div>
         </div>
-        <div style={{ marginTop: 10, padding: '12px 14px', borderRadius: 16, background: T.card, border: `1px solid ${T.rule}`, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontSize: 12, color: T.inkSoft, flex: 1 }}>Store as</div>
-          {(['fridge', 'freezer', 'feed_now'] as Storage[]).map(s => (<div key={s} onClick={() => setStorage(s)} style={{ cursor: 'pointer' }}><Chip color={s === storage ? T.sky : T.inkMute} soft={s === storage ? T.skySoft : 'rgba(0,0,0,0.04)'}>{s === 'fridge' ? '❄ Fridge' : s === 'freezer' ? 'Freezer' : 'Feed now'}</Chip></div>))}
+        <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl border border-rule bg-card px-3.5 py-3">
+          <div className="flex-1 text-xs text-ink-soft">Store as</div>
+          {(['fridge', 'freezer', 'feed_now'] as Storage[]).map(s => (<div key={s} onClick={() => setStorage(s)} className="cursor-pointer"><Chip color={s === storage ? T.sky : T.inkMute} soft={s === storage ? T.skySoft : 'rgba(0,0,0,0.04)'}>{s === 'fridge' ? '❄ Fridge' : s === 'freezer' ? 'Freezer' : 'Feed now'}</Chip></div>))}
         </div>
       </div>
-      <div style={{ padding: '14px 16px 0', display: 'flex', gap: 10 }}>
+      <div className="flex gap-2.5 px-4 pt-3.5">
         {entryMode === 'live' && !running ? (
-          <button onClick={startSession} style={{ flex: 1, padding: '14px', borderRadius: 16, border: 'none', background: T.honey, color: '#3B2A0E', fontFamily: fonts.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><div style={{ width: 14, height: 14 }}>{I.play}</div>Start pumping</button>
+          <button onClick={startSession} className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-2xl border-0 bg-honey p-3.5 text-[15px] font-bold text-[#3B2A0E]"><div className="h-3.5 w-3.5">{I.play}</div>Start pumping</button>
         ) : entryMode === 'live' ? (
-          <><button onClick={() => setRunning(r => !r)} style={{ flex: 1, padding: '14px', borderRadius: 16, border: `1px solid ${T.rule}`, background: T.card, color: T.ink, fontFamily: fonts.sans, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>{running ? 'Pause' : 'Resume'}</button><button onClick={endSession} disabled={saving} style={{ flex: 1.4, padding: '14px', borderRadius: 16, border: 'none', background: T.honey, color: '#3B2A0E', fontFamily: fonts.sans, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Saving…' : 'End session'}</button></>
+          <><button onClick={() => setRunning(r => !r)} className="flex-1 cursor-pointer rounded-2xl border border-rule bg-card p-3.5 text-sm font-bold text-ink">{running ? 'Pause' : 'Resume'}</button><button onClick={endSession} disabled={saving} className="flex-[1.4] cursor-pointer rounded-2xl border-0 bg-honey p-3.5 text-sm font-bold text-[#3B2A0E]">{saving ? 'Saving…' : 'End session'}</button></>
         ) : (
-          <button onClick={saveManual} disabled={saving || !manualStart} style={{ flex: 1, padding: '15px', borderRadius: 16, border: 'none', background: T.honey, color: '#3B2A0E', fontFamily: fonts.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Saving…' : editId ? 'Update session' : 'Save session'}</button>
+          <button onClick={saveManual} disabled={saving || !manualStart} className="flex-1 cursor-pointer rounded-2xl border-0 bg-honey p-[15px] text-[15px] font-bold text-[#3B2A0E]">{saving ? 'Saving…' : editId ? 'Update session' : 'Save session'}</button>
         )}
       </div>
     </div>

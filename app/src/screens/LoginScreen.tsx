@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { T, fonts } from "../tokens";
 import { signIn, signUp, authClient } from "../auth/client";
 
 type Mode = "signin" | "signup";
@@ -31,82 +30,30 @@ export function LoginScreen() {
     }
   }
 
-  const inputStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "14px 16px",
-    borderRadius: 14,
-    border: `1.5px solid ${T.rule}`,
-    background: T.card,
-    fontFamily: fonts.sans,
-    fontSize: 15,
-    color: T.ink,
-    outline: "none",
-    boxSizing: "border-box",
-    WebkitAppearance: "none",
-  };
+  const inputClassName =
+    "w-full appearance-none box-border rounded-[14px] border-[1.5px] border-rule bg-card px-4 py-[14px] font-sans text-[15px] text-ink outline-none";
+  const labelClassName =
+    "mb-1.5 block text-[11.5px] font-bold uppercase tracking-[0.4px] text-ink-soft";
 
   return (
-    <div
-      style={{
-        width: "100%",
-        minHeight: "100%",
-        background: T.cream,
-        fontFamily: fonts.sans,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        paddingTop: "max(40px, env(safe-area-inset-top))",
-        paddingBottom: "max(40px, env(safe-area-inset-bottom))",
-        padding: "40px 28px",
-        boxSizing: "border-box",
-      }}
-    >
+    <div className="flex min-h-full w-full flex-col items-center justify-center box-border bg-cream px-7 py-10 font-sans">
       {/* Logo / Baby avatar */}
-      <div style={{ textAlign: "center", marginBottom: 32 }}>
+      <div className="mb-8 text-center">
         <div
-          style={{
-            width: 80,
-            height: 80,
-            borderRadius: 40,
-            background: `linear-gradient(135deg, ${T.terracottaSoft}, ${T.honeySoft})`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 36,
-            margin: "0 auto 16px",
-            boxShadow: T.shadowLg,
-          }}
+          className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-[40px] bg-[linear-gradient(135deg,var(--color-terracotta-soft),var(--color-honey-soft))] text-4xl shadow-card-lg"
         >
           👶
         </div>
-        <div
-          style={{
-            fontFamily: fonts.serif,
-            fontSize: 28,
-            color: T.ink,
-            letterSpacing: -0.5,
-            lineHeight: 1.1,
-          }}
-        >
+        <div className="font-serif text-[28px] leading-[1.1] tracking-[-0.5px] text-ink">
           Newborn Care
         </div>
-        <div style={{ fontSize: 13, color: T.inkMute, marginTop: 4 }}>
+        <div className="mt-1 text-[13px] text-ink-mute">
           Track your baby's daily care
         </div>
       </div>
 
       {/* Mode toggle */}
-      <div
-        style={{
-          display: "inline-flex",
-          padding: 4,
-          borderRadius: 14,
-          background: "rgba(0,0,0,0.04)",
-          gap: 2,
-          marginBottom: 24,
-        }}
-      >
+      <div className="mb-6 inline-flex gap-0.5 rounded-[14px] bg-black/[0.04] p-1">
         {(["signin", "signup"] as Mode[]).map((m) => (
           <button
             key={m}
@@ -114,19 +61,11 @@ export function LoginScreen() {
               setMode(m);
               setError("");
             }}
-            style={{
-              padding: "9px 22px",
-              borderRadius: 11,
-              border: "none",
-              cursor: "pointer",
-              background: mode === m ? T.card : "transparent",
-              color: mode === m ? T.terracotta : T.inkSoft,
-              fontFamily: fonts.sans,
-              fontSize: 14,
-              fontWeight: 700,
-              boxShadow: mode === m ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
-              transition: "all 0.15s",
-            }}
+            className={`cursor-pointer rounded-[11px] border-0 px-[22px] py-[9px] font-sans text-sm font-bold transition-all duration-150 ${
+              mode === m
+                ? "bg-card text-terracotta shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+                : "bg-transparent text-ink-soft shadow-none"
+            }`}
           >
             {m === "signin" ? "Sign in" : "Sign up"}
           </button>
@@ -136,27 +75,11 @@ export function LoginScreen() {
       {/* Form */}
       <form
         onSubmit={handleSubmit}
-        style={{
-          width: "100%",
-          maxWidth: 360,
-          display: "flex",
-          flexDirection: "column",
-          gap: 12,
-        }}
+        className="flex w-full max-w-[360px] flex-col gap-3"
       >
         {mode === "signup" && (
           <div>
-            <label
-              style={{
-                fontSize: 11.5,
-                fontWeight: 700,
-                color: T.inkSoft,
-                letterSpacing: 0.4,
-                textTransform: "uppercase",
-                display: "block",
-                marginBottom: 6,
-              }}
-            >
+            <label className={labelClassName}>
               Your name
             </label>
             <input
@@ -165,23 +88,13 @@ export function LoginScreen() {
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Hakim"
               required
-              style={inputStyle}
+              className={inputClassName}
             />
           </div>
         )}
 
         <div>
-          <label
-            style={{
-              fontSize: 11.5,
-              fontWeight: 700,
-              color: T.inkSoft,
-              letterSpacing: 0.4,
-              textTransform: "uppercase",
-              display: "block",
-              marginBottom: 6,
-            }}
-          >
+          <label className={labelClassName}>
             Email
           </label>
           <input
@@ -190,22 +103,12 @@ export function LoginScreen() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             required
-            style={inputStyle}
+            className={inputClassName}
           />
         </div>
 
         <div>
-          <label
-            style={{
-              fontSize: 11.5,
-              fontWeight: 700,
-              color: T.inkSoft,
-              letterSpacing: 0.4,
-              textTransform: "uppercase",
-              display: "block",
-              marginBottom: 6,
-            }}
-          >
+          <label className={labelClassName}>
             Password
           </label>
           <input
@@ -217,22 +120,12 @@ export function LoginScreen() {
             }
             required
             minLength={mode === "signup" ? 8 : undefined}
-            style={inputStyle}
+            className={inputClassName}
           />
         </div>
 
         {error && (
-          <div
-            style={{
-              padding: "10px 14px",
-              borderRadius: 12,
-              background: "#FDE8E8",
-              color: "#C0392B",
-              fontSize: 13,
-              fontWeight: 500,
-              lineHeight: 1.4,
-            }}
-          >
+          <div className="rounded-xl bg-[#FDE8E8] px-3.5 py-2.5 text-[13px] font-medium leading-[1.4] text-[#C0392B]">
             {error}
           </div>
         )}
@@ -240,21 +133,11 @@ export function LoginScreen() {
         <button
           type="submit"
           disabled={loading}
-          style={{
-            marginTop: 4,
-            width: "100%",
-            padding: "15px 0",
-            borderRadius: 16,
-            border: "none",
-            background: loading ? T.terracottaSoft : T.terracotta,
-            color: loading ? T.terracotta : T.card,
-            fontFamily: fonts.sans,
-            fontSize: 15,
-            fontWeight: 700,
-            cursor: loading ? "not-allowed" : "pointer",
-            letterSpacing: 0.2,
-            transition: "all 0.15s",
-          }}
+          className={`mt-1 w-full rounded-2xl border-0 py-[15px] font-sans text-[15px] font-bold tracking-[0.2px] transition-all duration-150 ${
+            loading
+              ? "cursor-not-allowed bg-terracotta-soft text-terracotta"
+              : "cursor-pointer bg-terracotta text-card"
+          }`}
         >
           {loading
             ? mode === "signin"
@@ -267,22 +150,16 @@ export function LoginScreen() {
       </form>
 
       {/* Divider */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0', width: '100%', maxWidth: 360 }}>
-        <div style={{ flex: 1, height: 1, background: T.rule }} />
-        <span style={{ fontSize: 12, color: T.inkMute, fontWeight: 600, letterSpacing: 0.4 }}>OR</span>
-        <div style={{ flex: 1, height: 1, background: T.rule }} />
+      <div className="my-5 flex w-full max-w-[360px] items-center gap-3">
+        <div className="h-px flex-1 bg-rule" />
+        <span className="text-xs font-semibold tracking-[0.4px] text-ink-mute">OR</span>
+        <div className="h-px flex-1 bg-rule" />
       </div>
 
       {/* Google */}
       <button
         onClick={() => authClient.signIn.social({ provider: 'google', callbackURL: window.location.origin })}
-        style={{
-          width: '100%', maxWidth: 360, padding: '14px 0', borderRadius: 16,
-          border: `1.5px solid ${T.rule}`, background: T.card,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-          fontFamily: fonts.sans, fontSize: 15, fontWeight: 600, color: T.ink,
-          cursor: 'pointer',
-        }}
+        className="flex w-full max-w-[360px] cursor-pointer items-center justify-center gap-2.5 rounded-2xl border-[1.5px] border-rule bg-card py-[14px] font-sans text-[15px] font-semibold text-ink"
       >
         <svg width="18" height="18" viewBox="0 0 48 48">
           <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -294,30 +171,13 @@ export function LoginScreen() {
         Continue with Google
       </button>
 
-      <div
-        style={{
-          marginTop: 20,
-          fontSize: 12.5,
-          color: T.inkMute,
-          textAlign: "center",
-          lineHeight: 1.5,
-        }}
-      >
+      <div className="mt-5 text-center text-[12.5px] leading-[1.5] text-ink-mute">
         {mode === "signin" ? (
           <>
             No account?{" "}
             <button
               onClick={() => setMode("signup")}
-              style={{
-                background: "none",
-                border: "none",
-                color: T.terracotta,
-                fontFamily: fonts.sans,
-                fontSize: 12.5,
-                fontWeight: 600,
-                cursor: "pointer",
-                padding: 0,
-              }}
+              className="cursor-pointer border-0 bg-transparent p-0 font-sans text-[12.5px] font-semibold text-terracotta"
             >
               Sign up
             </button>
@@ -327,16 +187,7 @@ export function LoginScreen() {
             Already have an account?{" "}
             <button
               onClick={() => setMode("signin")}
-              style={{
-                background: "none",
-                border: "none",
-                color: T.terracotta,
-                fontFamily: fonts.sans,
-                fontSize: 12.5,
-                fontWeight: 600,
-                cursor: "pointer",
-                padding: 0,
-              }}
+              className="cursor-pointer border-0 bg-transparent p-0 font-sans text-[12.5px] font-semibold text-terracotta"
             >
               Sign in
             </button>

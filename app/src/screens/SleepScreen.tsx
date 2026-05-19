@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { T, fonts } from '../tokens';
-import { BackBtn, useTimer, iconBtnStyle, useNav, EntryModeToggle, DateTimeField } from '../components/ui';
+import { T } from '../tokens';
+import { BackBtn, useTimer, useNav, DateTimeField } from '../components/ui';
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
 import { useEditRecord } from '../hooks/useEditRecord';
 import type { Sleep } from '../types';
+import { cn } from '../lib/utils';
 
 function toLocalDT(d: Date) {
   const p = (n: number) => String(n).padStart(2, '0');
@@ -61,8 +62,18 @@ export function SleepScreen() {
 
   const h = Math.floor(elapsed / 3600);
   const m = Math.floor((elapsed % 3600) / 60);
+  const starPositions = [
+    'left-10 top-[90px]', 'left-[300px] top-20', 'left-[60px] top-[250px]',
+    'left-[280px] top-[290px]', 'left-[120px] top-[540px]', 'left-[330px] top-[520px]',
+  ];
+  const barHeightClasses = [
+    'h-7', 'h-[34px]', 'h-[34px]', 'h-[29px]', 'h-5', 'h-3', 'h-1.5', 'h-2',
+    'h-[18px]', 'h-[29px]', 'h-[34px]', 'h-[33px]', 'h-[26px]', 'h-[18px]', 'h-[13px]', 'h-[14px]',
+    'h-5', 'h-[27px]', 'h-[28px]', 'h-[26px]', 'h-[21px]', 'h-[18px]', 'h-[19px]', 'h-[25px]',
+    'h-[33px]', 'h-[38px]', 'h-[38px]', 'h-8', 'h-[21px]', 'h-[11px]', 'h-1.5', 'h-1',
+  ];
   const bars = Array.from({ length: 32 }).map((_, i) => ({
-    height: Math.max(4, 6 + Math.sin(i * 0.7) * 14 + Math.cos(i * 1.3) * 8 + 14),
+    heightClass: barHeightClasses[i],
     active: running && i < Math.min(32, elapsed / 60 * 2),
   }));
   const manualDurMin = manualStart && manualEnd
@@ -71,27 +82,22 @@ export function SleepScreen() {
   const locations = ['crib', 'bassinet', 'pram', 'arms', 'car'];
 
   return (
-    <div style={{ width: '100%', minHeight: '100%', background: '#2A3327', fontFamily: fonts.sans, display: 'flex', flexDirection: 'column', paddingTop: 'max(20px, env(safe-area-inset-top))', boxSizing: 'border-box', color: '#EDE7D6', position: 'relative' }}>
-      {[[40,90],[300,80],[60,250],[280,290],[120,540],[330,520]].map(([x,y], i) => (
-        <div key={i} style={{ position: 'absolute', left: x, top: y, width: 3, height: 3, borderRadius: 2, background: 'rgba(237,231,214,0.5)' }} />
+    <div className="relative box-border flex min-h-full w-full flex-col bg-[#2A3327] pt-[max(20px,env(safe-area-inset-top))] font-sans text-[#EDE7D6]">
+      {starPositions.map((position, i) => (
+        <div key={i} className={cn('absolute h-[3px] w-[3px] rounded-sm bg-[#EDE7D6]/50', position)} />
       ))}
-      <div style={{ position: 'absolute', top: 110, left: '50%', transform: 'translateX(-50%)', width: 280, height: 280, borderRadius: 140, background: 'radial-gradient(circle, rgba(126,149,117,0.18), transparent 70%)', pointerEvents: 'none' }} />
+      <div className="pointer-events-none absolute top-[110px] left-1/2 h-[280px] w-[280px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(126,149,117,0.18),transparent_70%)]" />
 
-      <div style={{ padding: '6px 20px 0', display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
+      <div className="relative flex items-center gap-2.5 px-5 pt-1.5">
         <BackBtn dark />
-        <div style={{ flex: 1, textAlign: 'center', fontSize: 13, fontWeight: 700, color: '#EDE7D6', letterSpacing: 0.4, textTransform: 'uppercase' }}>{editId ? 'Edit Sleep' : 'Sleep'}</div>
-        <button style={{ ...iconBtnStyle, background: 'rgba(255,252,245,0.08)' }}><div style={{ width: 18, height: 18, color: T.honey }}>{I.moon}</div></button>
+        <div className="flex-1 text-center text-[13px] font-bold tracking-[0.4px] text-[#EDE7D6] uppercase">{editId ? 'Edit Sleep' : 'Sleep'}</div>
+        <button className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-xl border-0 bg-card/8"><div className="h-[18px] w-[18px] text-honey">{I.moon}</div></button>
       </div>
 
-      <div style={{ padding: '10px 0', display: 'flex', justifyContent: 'center', position: 'relative' }}>
-        <div style={{ padding: 3, borderRadius: 10, background: 'rgba(255,252,245,0.1)', display: 'inline-flex' }}>
+      <div className="relative flex justify-center py-2.5">
+        <div className="inline-flex rounded-[10px] bg-card/10 p-[3px]">
           {(['live', 'manual'] as const).map(mode => (
-            <button key={mode} onClick={() => { if (!running) setEntryMode(mode); }} style={{
-              padding: '7px 18px', borderRadius: 8, border: 'none', cursor: running ? 'not-allowed' : 'pointer',
-              background: entryMode === mode ? 'rgba(255,252,245,0.18)' : 'transparent',
-              color: entryMode === mode ? T.sage : 'rgba(237,231,214,0.5)',
-              fontFamily: fonts.sans, fontSize: 12.5, fontWeight: 700, transition: 'all 0.12s',
-            }}>
+            <button key={mode} onClick={() => { if (!running) setEntryMode(mode); }} className={cn('rounded-lg border-0 px-[18px] py-[7px] text-[12.5px] font-bold transition-all duration-150', running ? 'cursor-not-allowed' : 'cursor-pointer', entryMode === mode ? 'bg-card/18 text-sage' : 'bg-transparent text-[#EDE7D6]/50')}>
               {mode === 'live' ? '⏱ Live' : '✎ Manual'}
             </button>
           ))}
@@ -100,56 +106,56 @@ export function SleepScreen() {
 
       {entryMode === 'live' ? (
         <>
-          <div style={{ padding: '30px 16px 0', textAlign: 'center', position: 'relative' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(237,231,214,0.55)', letterSpacing: 0.6, textTransform: 'uppercase' }}>{running ? 'Asleep for' : 'Start sleep timer'}</div>
-            <div style={{ fontFamily: fonts.serif, fontSize: 96, lineHeight: 1, marginTop: 8, color: '#EDE7D6', fontWeight: 400, letterSpacing: -3, fontVariantNumeric: 'tabular-nums' }}>
-              {h}<span style={{ color: T.sage, fontStyle: 'italic' }}>:</span>{String(m).padStart(2, '0')}
+          <div className="relative px-4 pt-[30px] text-center">
+            <div className="text-xs font-bold tracking-[0.6px] text-[#EDE7D6]/55 uppercase">{running ? 'Asleep for' : 'Start sleep timer'}</div>
+            <div className="mt-2 font-serif text-8xl leading-none font-normal tracking-[-3px] text-[#EDE7D6] tabular-nums">
+              {h}<span className="italic text-sage">:</span>{String(m).padStart(2, '0')}
             </div>
-            {startTime && (<div style={{ fontFamily: fonts.serif, fontStyle: 'italic', fontSize: 18, color: T.sage, marginTop: 6 }}>hours · since {startTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div>)}
-            {running && (<div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 16, padding: '5px 12px', borderRadius: 999, background: 'rgba(126,149,117,0.18)', fontSize: 11.5, color: T.sage, fontWeight: 600 }}><span style={{ width: 6, height: 6, borderRadius: 3, background: T.sage }} />{location}</div>)}
+            {startTime && (<div className="mt-1.5 font-serif text-lg italic text-sage">hours · since {startTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div>)}
+            {running && (<div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-sage/18 px-3 py-[5px] text-[11.5px] font-semibold text-sage"><span className="h-1.5 w-1.5 rounded-full bg-sage" />{location}</div>)}
           </div>
-          <div style={{ padding: '24px 24px 0', position: 'relative' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 50 }}>
-              {bars.map((b, i) => (<div key={i} style={{ flex: 1, height: b.height, borderRadius: 2, background: b.active ? 'rgba(126,149,117,0.55)' : 'rgba(237,231,214,0.18)' }} />))}
+          <div className="relative px-6 pt-6">
+            <div className="flex h-[50px] items-end gap-[3px]">
+              {bars.map((b, i) => (<div key={i} className={cn(b.heightClass, 'flex-1 rounded-sm', b.active ? 'bg-sage/55' : 'bg-[#EDE7D6]/18')} />))}
             </div>
-            {startTime && (<div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: fonts.mono, fontSize: 10, color: 'rgba(237,231,214,0.45)', marginTop: 6 }}><span>{startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span><span>now</span></div>)}
+            {startTime && (<div className="mt-1.5 flex justify-between font-mono text-[10px] text-[#EDE7D6]/45"><span>{startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span><span>now</span></div>)}
           </div>
         </>
       ) : (
-        <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 12, position: 'relative' }}>
-          <div style={{ padding: '14px 16px', borderRadius: 18, background: 'rgba(255,252,245,0.08)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="relative flex flex-col gap-3 px-4">
+          <div className="flex flex-col gap-3.5 rounded-[18px] bg-card/8 px-4 py-3.5">
             <DateTimeField label="Fell asleep at" value={manualStart} onChange={setManualStart} />
             <DateTimeField label="Woke up at" value={manualEnd} onChange={setManualEnd} />
           </div>
-          {manualDurMin > 0 && (<div style={{ textAlign: 'center', fontFamily: fonts.serif, fontSize: 18, color: T.sage, fontStyle: 'italic' }}>{manualDurMin >= 60 ? `${Math.floor(manualDurMin / 60)}h ${manualDurMin % 60}m` : `${manualDurMin} min`}</div>)}
+          {manualDurMin > 0 && (<div className="text-center font-serif text-lg italic text-sage">{manualDurMin >= 60 ? `${Math.floor(manualDurMin / 60)}h ${manualDurMin % 60}m` : `${manualDurMin} min`}</div>)}
         </div>
       )}
 
-      <div style={{ padding: '16px 16px 0', position: 'relative' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(237,231,214,0.55)', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 }}>Location</div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {locations.map(loc => (<button key={loc} onClick={() => setLocation(loc)} style={{ padding: '7px 14px', borderRadius: 999, cursor: 'pointer', border: 'none', background: location === loc ? T.sage : 'rgba(255,252,245,0.08)', color: location === loc ? '#1F2A1D' : 'rgba(237,231,214,0.7)', fontFamily: fonts.sans, fontSize: 12, fontWeight: 600, textTransform: 'capitalize', transition: 'all 0.12s' }}>{loc}</button>))}
+      <div className="relative px-4 pt-4">
+        <div className="mb-2 text-[11px] font-bold tracking-[0.5px] text-[#EDE7D6]/55 uppercase">Location</div>
+        <div className="flex flex-wrap gap-1.5">
+          {locations.map(loc => (<button key={loc} onClick={() => setLocation(loc)} className={cn('cursor-pointer rounded-full border-0 px-3.5 py-[7px] text-xs font-semibold capitalize transition-all duration-150', location === loc ? 'bg-sage text-[#1F2A1D]' : 'bg-card/8 text-[#EDE7D6]/70')}>{loc}</button>))}
         </div>
       </div>
 
       {(running || entryMode === 'manual') && (
-        <div style={{ padding: '12px 16px 0', position: 'relative' }}>
+        <div className="relative px-4 pt-3">
           <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes (optional)…"
-            style={{ width: '100%', padding: '12px 14px', borderRadius: 14, minHeight: 52, background: 'rgba(255,252,245,0.08)', border: 'none', outline: 'none', color: '#EDE7D6', fontFamily: fonts.sans, fontSize: 13, resize: 'none', boxSizing: 'border-box' }} />
+            className="box-border min-h-[52px] w-full resize-none rounded-[14px] border-0 bg-card/8 px-3.5 py-3 text-[13px] text-[#EDE7D6] outline-none" />
         </div>
       )}
 
-      <div style={{ padding: '20px 16px 0', display: 'flex', gap: 10, position: 'relative' }}>
+      <div className="relative flex gap-2.5 px-4 pt-5">
         {entryMode === 'live' && !running ? (
-          <button onClick={startSleep} style={{ flex: 1, padding: '16px', borderRadius: 16, border: 'none', background: T.sage, color: '#1F2A1D', fontFamily: fonts.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <div style={{ width: 14, height: 14 }}>{I.sleep}</div>Start sleep
+          <button onClick={startSleep} className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-2xl border-0 bg-sage p-4 text-[15px] font-bold text-[#1F2A1D]">
+            <div className="h-3.5 w-3.5">{I.sleep}</div>Start sleep
           </button>
         ) : entryMode === 'live' ? (
-          <button onClick={wakeUp} disabled={saving} style={{ flex: 1, padding: '14px', borderRadius: 16, border: 'none', background: T.sage, color: '#1F2A1D', fontFamily: fonts.sans, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <div style={{ width: 14, height: 14 }}>{I.stop}</div>{saving ? 'Saving…' : 'Wake up'}
+          <button onClick={wakeUp} disabled={saving} className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-2xl border-0 bg-sage p-3.5 text-sm font-bold text-[#1F2A1D]">
+            <div className="h-3.5 w-3.5">{I.stop}</div>{saving ? 'Saving…' : 'Wake up'}
           </button>
         ) : (
-          <button onClick={saveManual} disabled={saving || !manualStart || !manualEnd} style={{ flex: 1, padding: '15px', borderRadius: 16, border: 'none', background: T.sage, color: '#1F2A1D', fontFamily: fonts.sans, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+          <button onClick={saveManual} disabled={saving || !manualStart || !manualEnd} className="flex-1 cursor-pointer rounded-2xl border-0 bg-sage p-[15px] text-[15px] font-bold text-[#1F2A1D]">
             {saving ? 'Saving…' : editId ? 'Update sleep' : 'Save sleep'}
           </button>
         )}

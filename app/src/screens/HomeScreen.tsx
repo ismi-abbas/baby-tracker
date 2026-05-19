@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { T, fonts } from '../tokens';
+import { T } from '../tokens';
 import { Card, Chip, SyncBadge, TabBar, fmtDuration, fmtTimeAgo } from '../components/ui';
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
@@ -17,21 +17,21 @@ function useRecentActivities(babyApi: ReturnType<typeof import('../api/client').
     (babyApi.sleeps.list(3) as Promise<Sleep[]>).then(setSleeps).catch(() => {});
   }, [babyApi]);
 
-  type Activity = { icon: React.ReactNode; color: string; soft: string; title: string; sub: string; by: string; time: string };
+  type Activity = { icon: React.ReactNode; color: string; soft: string; colorClass: string; softClass: string; title: string; sub: string; by: string; time: string };
   const activities: Activity[] = [
     ...feeds.slice(0, 2).map(f => ({
-      icon: I.feed, color: T.terracotta, soft: T.terracottaSoft,
+      icon: I.feed, color: T.terracotta, soft: T.terracottaSoft, colorClass: 'text-terracotta', softClass: 'bg-terracotta-soft',
       title: f.type === 'breast' ? `Breastfed · ${f.side ? f.side.charAt(0).toUpperCase() + f.side.slice(1) : 'Both'} side` : `Bottle feed`,
       sub: f.durationSeconds ? fmtDuration(f.durationSeconds) : f.amountMl ? formatMilk(f.amountMl, milkUnit) : '',
       by: f.loggedBy ?? 'You', time: f.startedAt,
     })),
     ...diapers.slice(0, 1).map(d => ({
-      icon: I.diaper, color: T.earth, soft: T.earthSoft,
+      icon: I.diaper, color: T.earth, soft: T.earthSoft, colorClass: 'text-earth', softClass: 'bg-earth-soft',
       title: d.type === 'dirty' ? 'Dirty diaper' : d.type === 'wet' ? 'Wet diaper' : 'Mixed diaper',
       sub: d.consistency ?? '', by: d.loggedBy ?? 'You', time: d.changedAt,
     })),
     ...sleeps.slice(0, 1).map(s => ({
-      icon: I.sleep, color: T.sage, soft: T.sageSoft,
+      icon: I.sleep, color: T.sage, soft: T.sageSoft, colorClass: 'text-sage', softClass: 'bg-sage-soft',
       title: s.endedAt ? 'Nap ended' : 'Sleeping',
       sub: s.durationSeconds ? fmtDuration(s.durationSeconds) : 'ongoing',
       by: s.loggedBy ?? 'You', time: s.startedAt,
@@ -76,42 +76,29 @@ export function HomeScreen() {
   const diaperCount = stats?.diaperCount ?? 0;
 
   return (
-    <div style={{
-      width: '100%', minHeight: '100%', background: T.cream,
-      fontFamily: fonts.sans, display: 'flex', flexDirection: 'column',
-      paddingTop: 'max(20px, env(safe-area-inset-top))', boxSizing: 'border-box',
-    }}>
+    <div className="box-border flex min-h-full w-full flex-col bg-cream pt-[max(20px,env(safe-area-inset-top))] font-sans">
       {/* Header */}
-      <div style={{ padding: '8px 22px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="flex items-center justify-between px-[22px] pt-2">
         <div>
-          <div style={{ color: T.inkMute, fontSize: 12.5, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>{dateStr}</div>
-          <div style={{ fontFamily: fonts.serif, fontSize: 30, color: T.ink, lineHeight: 1.05, marginTop: 2, letterSpacing: -0.5 }}>
-            Good {greeting},<br/><span style={{ fontStyle: 'italic', color: T.terracotta }}>{firstName}</span>
+          <div className="text-[12.5px] font-semibold uppercase tracking-[0.5px] text-ink-mute">{dateStr}</div>
+          <div className="mt-0.5 font-serif text-[30px] leading-[1.05] tracking-[-0.5px] text-ink">
+            Good {greeting},<br/><span className="italic text-terracotta">{firstName}</span>
           </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-          <div style={{
-            width: 44, height: 44, borderRadius: 22, background: T.terracottaSoft,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: fonts.serif, fontSize: 18, color: T.terracotta, fontWeight: 600,
-            border: `2px solid ${T.card}`,
-          }}>{initial}</div>
+        <div className="flex flex-col items-end gap-1.5">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-card bg-terracotta-soft font-serif text-lg font-semibold text-terracotta">{initial}</div>
           <SyncBadge />
         </div>
       </div>
 
       {/* Baby card */}
-      <div style={{ padding: '20px 16px 0' }}>
-        <Card pad={0} style={{ overflow: 'hidden' }}>
-          <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{
-              width: 52, height: 52, borderRadius: 26,
-              background: `linear-gradient(135deg, ${T.terracottaSoft}, ${T.honeySoft})`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
-            }}>👶</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: T.ink }}>{babyName}</div>
-              <div style={{ fontSize: 12.5, color: T.inkSoft, marginTop: 1 }}>
+      <div className="px-4 pt-5">
+        <div className="overflow-hidden rounded-[22px] bg-card shadow-card">
+          <div className="flex items-center gap-3.5 px-[18px] py-3.5">
+            <div className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[linear-gradient(135deg,#f1d8c7,#f5e2be)] text-[22px]">👶</div>
+            <div className="flex-1">
+              <div className="text-[15px] font-bold text-ink">{babyName}</div>
+              <div className="mt-px text-[12.5px] text-ink-soft">
                 {weeks !== null ? `${weeks} weeks` : '—'} · {stats?.activeSleep ? '😴 sleeping' : '👀 awake'}
               </div>
             </div>
@@ -119,27 +106,27 @@ export function HomeScreen() {
               {stats?.activeSleep ? '● Asleep' : '● Awake'}
             </Chip>
           </div>
-        </Card>
+        </div>
       </div>
 
       {/* Today stats */}
-      <div style={{ padding: '14px 16px 0' }}>
+      <div className="px-4 pt-3.5">
         <Card pad={18}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: T.ink, letterSpacing: 0.2 }}>TODAY SO FAR</div>
-            <div style={{ fontSize: 11, color: T.inkMute }}>since midnight</div>
+          <div className="mb-3 flex items-center justify-between">
+            <div className="text-[13px] font-bold tracking-[0.2px] text-ink">TODAY SO FAR</div>
+            <div className="text-[11px] text-ink-mute">since midnight</div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+          <div className="grid grid-cols-4 gap-2">
             {[
               ['Feeds',   String(feedCount),                              T.terracotta, '/ 8 goal'],
               ['Diapers', String(diaperCount),                           T.earth,      `${stats?.wetDiapers ?? 0} wet`],
               ['Sleep',   sleepSec > 0 ? fmtDuration(sleepSec).replace(' ', '') : '—', T.sage,   `${stats?.sleepCount ?? 0} naps`],
               ['Pumped',  pumpedMl > 0 ? formatMilk(pumpedMl, prefs.milkUnit).split(' ')[0] : '—', T.honey, prefs.milkUnit],
             ].map(([label, val, col, sub]) => (
-              <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                <div style={{ fontSize: 10.5, color: T.inkMute, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.4, whiteSpace: 'nowrap' }}>{label}</div>
-                <div style={{ fontFamily: fonts.serif, fontSize: 22, color: col, fontWeight: 600, lineHeight: 1.05, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{val}</div>
-                <div style={{ fontSize: 10.5, color: T.inkMute, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</div>
+              <div key={label} className="flex min-w-0 flex-col gap-0.5">
+                <div className="whitespace-nowrap text-[10.5px] font-semibold uppercase tracking-[0.4px] text-ink-mute">{label}</div>
+                <div className={`whitespace-nowrap font-serif text-[22px] font-semibold leading-[1.05] tabular-nums ${col === T.terracotta ? 'text-terracotta' : col === T.earth ? 'text-earth' : col === T.sage ? 'text-sage' : 'text-honey'}`}>{val}</div>
+                <div className="mt-0.5 truncate whitespace-nowrap text-[10.5px] text-ink-mute">{sub}</div>
               </div>
             ))}
           </div>
@@ -148,19 +135,19 @@ export function HomeScreen() {
 
       {/* Last activity */}
       {activities.length > 0 && (
-        <div style={{ padding: '14px 16px 0' }}>
-          <div style={{ fontSize: 12.5, fontWeight: 700, color: T.inkSoft, letterSpacing: 0.6, textTransform: 'uppercase', padding: '0 6px 8px' }}>Last activity</div>
+        <div className="px-4 pt-3.5">
+          <div className="px-1.5 pb-2 text-[12.5px] font-bold uppercase tracking-[0.6px] text-ink-soft">Last activity</div>
           <Card pad={0}>
             {activities.map((row, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderTop: i ? `1px solid ${T.rule}` : 'none' }}>
-                <div style={{ width: 36, height: 36, borderRadius: 11, background: row.soft, color: row.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ width: 20, height: 20 }}>{row.icon}</div>
+              <div key={i} className={`flex items-center gap-3 px-3.5 py-3 ${i ? 'border-t border-rule' : ''}`}>
+                <div className={`flex h-9 w-9 items-center justify-center rounded-[11px] ${row.softClass} ${row.colorClass}`}>
+                  <div className="h-5 w-5">{row.icon}</div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: T.ink }}>{row.title}</div>
-                  <div style={{ fontSize: 11.5, color: T.inkMute, marginTop: 1 }}>{row.sub && `${row.sub} · `}{fmtTimeAgo(row.time)}</div>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-ink">{row.title}</div>
+                  <div className="mt-px text-[11.5px] text-ink-mute">{row.sub && `${row.sub} · `}{fmtTimeAgo(row.time)}</div>
                 </div>
-                <div style={{ fontSize: 10.5, color: T.inkMute, padding: '2px 8px', borderRadius: 999, background: 'rgba(0,0,0,0.03)', fontWeight: 600 }}>
+                <div className="rounded-full bg-black/3 px-2 py-0.5 text-[10.5px] font-semibold text-ink-mute">
                   by {row.by}
                 </div>
               </div>
@@ -171,10 +158,10 @@ export function HomeScreen() {
 
       {/* Next feed reminder */}
       {stats?.lastFeed && (
-        <div style={{ padding: '14px 16px 0' }}>
-          <div style={{ background: T.honeySoft, borderRadius: 18, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 20, height: 20, color: T.honey, flexShrink: 0 }}>{I.bell}</div>
-            <div style={{ flex: 1, fontSize: 12.5, color: '#7C5A21', lineHeight: 1.35 }}>
+        <div className="px-4 pt-3.5">
+          <div className="flex items-center gap-3 rounded-[18px] bg-honey-soft px-3.5 py-3">
+            <div className="h-5 w-5 shrink-0 text-honey">{I.bell}</div>
+            <div className="flex-1 text-[12.5px] leading-[1.35] text-[#7C5A21]">
               Last feed was {fmtTimeAgo(stats.lastFeed.startedAt)} — watch for hunger cues soon
             </div>
           </div>
