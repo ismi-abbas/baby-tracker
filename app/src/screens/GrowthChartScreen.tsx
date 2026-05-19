@@ -4,6 +4,7 @@ import { T, fonts } from '../tokens';
 import { Card, Chip, TabBar, iconBtnStyle, useNav } from '../components/ui';
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
+import { cmToDisplay, gramsToDisplay, type LengthUnit, type WeightUnit, useUnitPrefs } from '../units';
 import type { GrowthEntry } from '../types';
 
 type Metric = 'weight' | 'length' | 'head';
@@ -13,14 +14,33 @@ const WHO_P3  = [2.5,3.4,4.4,5.1,5.6,6.1,6.4,6.7,7.0,7.2,7.5,7.7,7.9];
 const WHO_P50 = [3.3,4.5,5.6,6.4,7.0,7.5,7.9,8.3,8.6,8.9,9.2,9.4,9.6];
 const WHO_P97 = [4.4,5.8,7.1,8.0,8.7,9.3,9.8,10.2,10.6,10.9,11.2,11.5,11.8];
 
-const METRIC_CONFIG = {
-  weight: { label: 'Weight', unit: 'kg', color: T.rose, getVal: (e: GrowthEntry) => (e.weightG ?? 0) / 1000, defaultMin: 2, defaultMax: 12.5, delta: (a: GrowthEntry, b: GrowthEntry) => `${(a.weightG ?? 0) - (b.weightG ?? 0) > 0 ? '+' : ''}${(a.weightG ?? 0) - (b.weightG ?? 0)}g` },
-  length: { label: 'Length', unit: 'cm', color: T.sage, getVal: (e: GrowthEntry) => e.lengthCm ?? 0, defaultMin: 40, defaultMax: 90, delta: (a: GrowthEntry, b: GrowthEntry) => `${((a.lengthCm ?? 0) - (b.lengthCm ?? 0) > 0 ? '+' : '')}${((a.lengthCm ?? 0) - (b.lengthCm ?? 0)).toFixed(1)}cm` },
-  head:   { label: 'Head',   unit: 'cm', color: T.terracotta, getVal: (e: GrowthEntry) => e.headCm ?? 0, defaultMin: 25, defaultMax: 55, delta: (a: GrowthEntry, b: GrowthEntry) => `${((a.headCm ?? 0) - (b.headCm ?? 0) > 0 ? '+' : '')}${((a.headCm ?? 0) - (b.headCm ?? 0)).toFixed(1)}cm` },
-} as const;
+function growthConfig(metric: Metric, weightUnit: WeightUnit, lengthUnit: LengthUnit) {
+  if (metric === 'weight') return {
+    label: 'Weight', unit: weightUnit, color: T.rose,
+    getVal: (e: GrowthEntry) => gramsToDisplay(e.weightG ?? 0, weightUnit),
+    defaultMin: gramsToDisplay(2000, weightUnit), defaultMax: gramsToDisplay(12500, weightUnit),
+    delta: (a: GrowthEntry, b: GrowthEntry) => {
+      const diff = (a.weightG ?? 0) - (b.weightG ?? 0);
+      const val = gramsToDisplay(Math.abs(diff), weightUnit).toFixed(weightUnit === 'lb' ? 1 : 2);
+      return `${diff > 0 ? '+' : diff < 0 ? '-' : ''}${val}${weightUnit}`;
+    },
+  };
+  const field = metric === 'length' ? 'lengthCm' : 'headCm';
+  return {
+    label: metric === 'length' ? 'Length' : 'Head', unit: lengthUnit, color: metric === 'length' ? T.sage : T.terracotta,
+    getVal: (e: GrowthEntry) => cmToDisplay((e[field] as number | undefined) ?? 0, lengthUnit),
+    defaultMin: cmToDisplay(metric === 'length' ? 40 : 25, lengthUnit), defaultMax: cmToDisplay(metric === 'length' ? 90 : 55, lengthUnit),
+    delta: (a: GrowthEntry, b: GrowthEntry) => {
+      const diff = ((a[field] as number | undefined) ?? 0) - ((b[field] as number | undefined) ?? 0);
+      const val = cmToDisplay(Math.abs(diff), lengthUnit).toFixed(1);
+      return `${diff > 0 ? '+' : diff < 0 ? '-' : ''}${val}${lengthUnit}`;
+    },
+  };
+}
 
 export function GrowthChartScreen() {
   const { baby, babyApi } = useBaby();
+  const { prefs } = useUnitPrefs();
   const { nav } = useNav();
   const navigate = useNavigate();
   const [entries, setEntries] = useState<GrowthEntry[]>([]);
@@ -33,7 +53,7 @@ export function GrowthChartScreen() {
       .catch(() => {});
   }, [baby, babyApi]);
 
-  const cfg = METRIC_CONFIG[metric];
+  const cfg = growthConfig(metric, prefs.weightUnit, prefs.lengthUnit);
   const W = 320, H = 200;
   const xMin = 0, xMax = 12;
 
@@ -50,7 +70,8 @@ export function GrowthChartScreen() {
 
   const px = (x: number) => 22 + ((x - xMin) / (xMax - xMin)) * (W - 30);
   const py = (y: number) => 12 + (1 - (y - wMin) / (wMax - wMin)) * (H - 28);
-  const whoPath = (arr: number[]) => arr.map((y, i) => `${i ? 'L' : 'M'} ${px(WHO_MONTHS[i])} ${py(y)}`).join(' ');
+  const whoVal = (kg: number) => prefs.weightUnit === 'lb' ? gramsToDisplay(kg * 1000, 'lb') : kg;
+  const whoPath = (arr: number[]) => arr.map((y, i) => `${i ? 'L' : 'M'} ${px(WHO_MONTHS[i])} ${py(whoVal(y))}`).join(' ');
 
   const babyPoints = entries.map(e => {
     const x = ageMonths(e.measuredAt);
@@ -78,7 +99,7 @@ export function GrowthChartScreen() {
         <div style={{ display: 'flex', padding: 4, borderRadius: 14, background: 'rgba(0,0,0,0.04)', gap: 2 }}>
           {(['weight', 'length', 'head'] as Metric[]).map((m) => {
             const active = metric === m;
-            const mc = METRIC_CONFIG[m];
+            const mc = growthConfig(m, prefs.weightUnit, prefs.lengthUnit);
             return (
               <div key={m} onClick={() => setMetric(m)} style={{ flex: 1, padding: '8px 10px', borderRadius: 11, textAlign: 'center', fontSize: 12, fontWeight: 700, cursor: 'pointer', background: active ? T.card : 'transparent', color: active ? mc.color : T.inkSoft, boxShadow: active ? '0 1px 2px rgba(0,0,0,0.04)' : 'none', transition: 'all 0.15s' }}>{mc.label}</div>
             );
@@ -114,7 +135,7 @@ export function GrowthChartScreen() {
               ));
             })()}
             {metric === 'weight' && <>
-              <path d={`${whoPath(WHO_P3)} L ${px(xMax)} ${py(WHO_P97[12])} ${[...WHO_P97].reverse().map((y,i) => `L ${px(WHO_MONTHS[12-i])} ${py(y)}`).join(' ')} Z`} fill={T.roseSoft} opacity="0.45"/>
+              <path d={`${whoPath(WHO_P3)} L ${px(xMax)} ${py(whoVal(WHO_P97[12]))} ${[...WHO_P97].reverse().map((y,i) => `L ${px(WHO_MONTHS[12-i])} ${py(whoVal(y))}`).join(' ')} Z`} fill={T.roseSoft} opacity="0.45"/>
               <path d={whoPath(WHO_P3)}  stroke={T.inkMute} strokeWidth="1" fill="none" strokeDasharray="3 4" opacity="0.5"/>
               <path d={whoPath(WHO_P50)} stroke={T.rose}    strokeWidth="1.5" fill="none" opacity="0.6"/>
               <path d={whoPath(WHO_P97)} stroke={T.inkMute} strokeWidth="1" fill="none" strokeDasharray="3 4" opacity="0.5"/>
@@ -170,7 +191,7 @@ export function GrowthChartScreen() {
                   {new Date(e.measuredAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                   {e.visitType === 'doctor' ? ' · Dr. visit' : ''}
                 </div>
-                <div style={{ fontFamily: fonts.serif, fontSize: 16, color: val > 0 ? T.ink : T.inkMute, fontWeight: 500 }}>{val > 0 ? val.toFixed(metric === 'weight' ? 2 : 1) : '—'} <span style={{ fontSize: 11, color: T.inkMute, fontStyle: 'italic' }}>{cfg.unit}</span></div>
+                <div style={{ fontFamily: fonts.serif, fontSize: 16, color: val > 0 ? T.ink : T.inkMute, fontWeight: 500 }}>{val > 0 ? val.toFixed(metric === 'weight' && prefs.weightUnit === 'kg' ? 2 : 1) : '—'} <span style={{ fontSize: 11, color: T.inkMute, fontStyle: 'italic' }}>{cfg.unit}</span></div>
                 <div style={{ width: 64, textAlign: 'right', fontSize: 11.5, fontWeight: 600, color: diffStr ? T.sage : T.inkMute }}>
                   {diffStr ?? '—'}
                 </div>

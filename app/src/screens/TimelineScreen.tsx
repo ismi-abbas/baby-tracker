@@ -4,6 +4,7 @@ import { T, fonts } from '../tokens';
 import { Card, Chip, TabBar, iconBtnStyle, fmtTime } from '../components/ui';
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
+import { formatMilk, type MilkUnit, useUnitPrefs } from '../units';
 import type { TimelineEvent } from '../types';
 
 const CATEGORY_ROUTE: Record<string, string> = {
@@ -15,15 +16,15 @@ const CATEGORY_ROUTE: Record<string, string> = {
 };
 
 const CAT_CONFIG = {
-  feeding: { icon: I.feed, color: T.terracotta, soft: T.terracottaSoft, label: (e: TimelineEvent) => {
+  feeding: { icon: I.feed, color: T.terracotta, soft: T.terracottaSoft, label: (e: TimelineEvent, milkUnit: MilkUnit) => {
     const f = e as unknown as { type: string; side?: string; amountMl?: number };
     if (f.type === 'breast') return `Breastfed · ${f.side ? f.side.charAt(0).toUpperCase() + f.side.slice(1) : 'Both'}`;
-    if (f.type === 'bottle') return `Bottle · ${f.amountMl ?? 0} ml`;
+    if (f.type === 'bottle') return `Bottle · ${formatMilk(f.amountMl, milkUnit)}`;
     return `${f.type} feed`;
-  }, sub: (e: TimelineEvent) => {
+  }, sub: (e: TimelineEvent, milkUnit: MilkUnit) => {
     const f = e as unknown as { durationSeconds?: number; amountMl?: number };
     if (f.durationSeconds) return `${Math.floor(f.durationSeconds / 60)} min`;
-    if (f.amountMl) return `${f.amountMl} ml`;
+    if (f.amountMl) return formatMilk(f.amountMl, milkUnit);
     return '';
   }},
   sleep: { icon: I.sleep, color: T.sage, soft: T.sageSoft, label: () => 'Sleep', sub: (e: TimelineEvent) => {
@@ -32,9 +33,9 @@ const CAT_CONFIG = {
     if (s.durationSeconds) return `${Math.floor(s.durationSeconds / 60)} min`;
     return '';
   }},
-  pumping: { icon: I.pump, color: T.honey, soft: T.honeySoft, label: () => 'Pumping', sub: (e: TimelineEvent) => {
+  pumping: { icon: I.pump, color: T.honey, soft: T.honeySoft, label: () => 'Pumping', sub: (e: TimelineEvent, milkUnit: MilkUnit) => {
     const p = e as unknown as { totalMl?: number; storageType?: string };
-    return `${p.totalMl ?? 0} ml${p.storageType ? ` · ${p.storageType}` : ''}`;
+    return `${formatMilk(p.totalMl, milkUnit)}${p.storageType ? ` · ${p.storageType}` : ''}`;
   }},
   diaper: { icon: I.diaper, color: T.earth, soft: T.earthSoft, label: (e: TimelineEvent) => {
     const d = e as unknown as { type: string };
@@ -65,6 +66,7 @@ const DeleteIcon = () => (
 
 export function TimelineScreen() {
   const { babyApi: api } = useBaby();
+  const { prefs } = useUnitPrefs();
   const navigate = useNavigate();
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -198,8 +200,8 @@ export function TimelineScreen() {
                         <div style={{ width: 18, height: 18 }}>{cfg.icon}</div>
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cfg.label(e)}</div>
-                        <div style={{ fontSize: 11, color: T.inkMute, marginTop: 1 }}>{cfg.sub(e)} · {(e as { loggedBy?: string }).loggedBy ?? 'You'}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cfg.label(e, prefs.milkUnit)}</div>
+                        <div style={{ fontSize: 11, color: T.inkMute, marginTop: 1 }}>{cfg.sub(e, prefs.milkUnit)} · {(e as { loggedBy?: string }).loggedBy ?? 'You'}</div>
                       </div>
                       {isLive && <Chip color={T.terracotta} soft={T.terracottaSoft}>● live</Chip>}
                       {canEdit && (

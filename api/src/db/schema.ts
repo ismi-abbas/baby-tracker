@@ -23,6 +23,16 @@ export const caregivers = pgTable("caregivers", {
   createdAt: text("created_at").notNull(),
 });
 
+export const babyMembers = pgTable("baby_members", {
+  id: text("id").primaryKey(),
+  babyId: text("baby_id")
+    .notNull()
+    .references(() => babies.id),
+  userId: text("user_id").notNull(),
+  role: text("role").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
 export const feedings = pgTable("feedings", {
   id: text("id").primaryKey(),
   babyId: text("baby_id")

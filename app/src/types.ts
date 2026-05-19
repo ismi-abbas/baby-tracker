@@ -19,6 +19,16 @@ export interface Caregiver {
   createdAt: string;
 }
 
+export interface BabyMember {
+  id: string;
+  babyId: string;
+  userId: string;
+  role: 'owner' | 'parent' | string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
 export interface Feeding {
   id: string;
   babyId: string;

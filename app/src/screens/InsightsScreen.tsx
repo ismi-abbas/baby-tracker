@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { T, fonts } from '../tokens';
 import { Card, Chip } from '../components/ui';
 import { useBaby } from '../context/BabyContext';
+import { formatMilk, useUnitPrefs } from '../units';
 
 interface WeeklyStats {
   avgFeedsPerDay: number;
@@ -14,6 +15,7 @@ interface WeeklyStats {
 
 export function InsightsScreen() {
   const { babyApi: api } = useBaby();
+  const { prefs } = useUnitPrefs();
   const [stats, setStats] = useState<WeeklyStats | null>(null);
 
   useEffect(() => {
@@ -133,7 +135,7 @@ export function InsightsScreen() {
         <Card pad={14}>
           <div style={{ fontSize: 11, color: T.inkMute, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>Mom pumped</div>
           <div style={{ fontFamily: fonts.serif, fontSize: 28, color: T.ink, fontWeight: 600, marginTop: 2 }}>
-            {stats?.totalPumpedMl ?? '—'}<span style={{ fontSize: 12, color: T.inkMute, fontStyle: 'italic', marginLeft: 4 }}>ml</span>
+            {stats ? formatMilk(stats.totalPumpedMl, prefs.milkUnit).split(' ')[0] : '—'}<span style={{ fontSize: 12, color: T.inkMute, fontStyle: 'italic', marginLeft: 4 }}>{prefs.milkUnit}</span>
           </div>
           <div style={{ fontSize: 11.5, color: T.inkMute, marginTop: 2 }}>this week · {stats?.pumpingSessions ?? 0} sessions</div>
         </Card>

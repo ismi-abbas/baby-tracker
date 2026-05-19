@@ -3,7 +3,8 @@ import { T, fonts } from '../tokens';
 import { Card, Chip, PillBtn, TabBar, iconBtnStyle } from '../components/ui';
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
-import type { Caregiver, DoctorVisit, GrowthEntry } from '../types';
+import { formatLength, formatWeight, useUnitPrefs } from '../units';
+import type { BabyMember, Caregiver, DoctorVisit, GrowthEntry } from '../types';
 
 function ageDisplay(birthDate: string) {
   const diff = Date.now() - new Date(birthDate).getTime();
@@ -22,20 +23,40 @@ function formatDate(iso: string) {
 
 export function ProfileScreen() {
   const { baby, babyApi } = useBaby();
+  const { prefs, setPrefs } = useUnitPrefs();
   const [caregivers, setCaregivers] = useState<Caregiver[]>([]);
+  const [members, setMembers] = useState<BabyMember[]>([]);
   const [visits, setVisits] = useState<DoctorVisit[]>([]);
   const [latestGrowth, setLatestGrowth] = useState<GrowthEntry | null>(null);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteStatus, setInviteStatus] = useState('');
 
   useEffect(() => {
     if (!baby) return;
     (babyApi.caregivers.list() as Promise<Caregiver[]>).then(setCaregivers).catch(() => {});
+    (babyApi.members.list() as Promise<BabyMember[]>).then(setMembers).catch(() => {});
     (babyApi.visits.list() as Promise<DoctorVisit[]>).then(setVisits).catch(() => {});
     (babyApi.growth.list() as Promise<GrowthEntry[]>).then(e => setLatestGrowth(e[0] ?? null)).catch(() => {});
   }, [baby, babyApi]);
 
+  async function inviteParent() {
+    const email = inviteEmail.trim();
+    if (!email) return;
+    setInviteStatus('Inviting...');
+    try {
+      await babyApi.members.invite(email);
+      const next = await babyApi.members.list() as BabyMember[];
+      setMembers(next);
+      setInviteEmail('');
+      setInviteStatus('Parent added. They can log once they sign in.');
+    } catch {
+      setInviteStatus('No account found for that email yet.');
+    }
+  }
+
   const latestVisit = visits[0];
-  const weightKg = latestGrowth ? ((latestGrowth.weightG ?? 0) / 1000).toFixed(1) : '—';
-  const lengthCm = latestGrowth?.lengthCm?.toFixed(0) ?? '—';
+  const weight = latestGrowth ? formatWeight(latestGrowth.weightG, prefs.weightUnit) : '—';
+  const length = latestGrowth ? formatLength(latestGrowth.lengthCm, prefs.lengthUnit) : '—';
   const babyName = baby?.name ?? '…';
   const initial = babyName[0]?.toUpperCase() ?? '?';
   const caregiverColors: Record<string, string> = {};
@@ -74,8 +95,8 @@ export function ProfileScreen() {
               </div>
             )}
             <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
-              {weightKg !== '—' && <Chip color={T.terracotta} soft={T.terracottaSoft}>{weightKg} kg</Chip>}
-              {lengthCm !== '—' && <Chip color={T.sage} soft={T.sageSoft}>{lengthCm} cm</Chip>}
+              {weight !== '—' && <Chip color={T.terracotta} soft={T.terracottaSoft}>{weight}</Chip>}
+              {length !== '—' && <Chip color={T.sage} soft={T.sageSoft}>{length}</Chip>}
               {baby?.bloodType && <Chip color={T.rose} soft={T.roseSoft}>{baby.bloodType} blood</Chip>}
               {baby?.doctorName && <Chip color={T.sky} soft={T.skySoft}>{baby.doctorName}</Chip>}
             </div>
@@ -108,6 +129,34 @@ export function ProfileScreen() {
           </Card>
         </div>
       )}
+
+      {/* Sharing */}
+      <div style={{ padding: '14px 16px 0' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: T.inkMute, letterSpacing: 0.6, textTransform: 'uppercase', padding: '0 6px 8px' }}>Sharing</div>
+        <Card pad={14}>
+          <div style={{ fontFamily: fonts.serif, fontSize: 18, color: T.ink, letterSpacing: -0.2 }}>Co-parent logging</div>
+          <div style={{ fontSize: 12, color: T.inkSoft, marginTop: 3, lineHeight: 1.4 }}>Invite a signed-in parent by email. They will see {babyName} and can add logs.</div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} type="email" placeholder="parent@email.com" style={{ flex: 1, minWidth: 0, padding: '10px 12px', borderRadius: 12, border: `1.5px solid ${T.rule}`, background: T.card, color: T.ink, fontFamily: fonts.sans, fontSize: 13, outline: 'none' }} />
+            <button onClick={inviteParent} disabled={!inviteEmail.trim()} style={{ padding: '10px 14px', borderRadius: 12, border: 'none', background: inviteEmail.trim() ? T.terracotta : T.terracottaSoft, color: inviteEmail.trim() ? T.card : T.terracotta, fontFamily: fonts.sans, fontSize: 12.5, fontWeight: 700, cursor: inviteEmail.trim() ? 'pointer' : 'not-allowed' }}>Invite</button>
+          </div>
+          {inviteStatus && <div style={{ fontSize: 11.5, color: inviteStatus.startsWith('No') ? '#C0392B' : T.sage, marginTop: 8, fontWeight: 600 }}>{inviteStatus}</div>}
+          {members.length > 0 && (
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {members.map(member => (
+                <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 12, background: T.parchment }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 14, background: T.terracottaSoft, color: T.terracotta, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: fonts.serif, fontWeight: 700 }}>{member.name[0]?.toUpperCase() ?? '?'}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: T.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.name}</div>
+                    <div style={{ fontSize: 10.5, color: T.inkMute, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.email}</div>
+                  </div>
+                  <Chip color={member.role === 'owner' ? T.terracotta : T.sage} soft={member.role === 'owner' ? T.terracottaSoft : T.sageSoft}>{member.role}</Chip>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
 
       {/* Doctor visits */}
       {latestVisit && (
@@ -151,17 +200,19 @@ export function ProfileScreen() {
         <div style={{ fontSize: 11, fontWeight: 700, color: T.inkMute, letterSpacing: 0.6, textTransform: 'uppercase', padding: '0 6px 8px' }}>Preferences</div>
         <Card pad={0}>
           {[
-            { k: 'Units', v: 'Metric (kg, cm, ml)', ic: I.measure },
+            { k: 'Milk', v: prefs.milkUnit, ic: I.feed, onClick: () => setPrefs(p => ({ ...p, milkUnit: p.milkUnit === 'ml' ? 'oz' : 'ml' })) },
+            { k: 'Weight', v: prefs.weightUnit, ic: I.measure, onClick: () => setPrefs(p => ({ ...p, weightUnit: p.weightUnit === 'kg' ? 'lb' : 'kg' })) },
+            { k: 'Length', v: prefs.lengthUnit, ic: I.measure, onClick: () => setPrefs(p => ({ ...p, lengthUnit: p.lengthUnit === 'cm' ? 'in' : 'cm' })) },
             { k: 'Reminders', v: 'Feed · Pump · Vaccine', ic: I.bell },
             { k: 'Night mode', v: 'Auto · 8 PM – 6 AM', ic: I.moon },
             { k: 'Export data', v: 'CSV / PDF', ic: I.doc },
           ].map((r, i) => (
-            <div key={r.k} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderTop: i ? `1px solid ${T.rule}` : 'none' }}>
+            <div key={r.k} onClick={r.onClick} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderTop: i ? `1px solid ${T.rule}` : 'none', cursor: r.onClick ? 'pointer' : 'default' }}>
               <div style={{ width: 30, height: 30, borderRadius: 8, background: T.parchment, color: T.inkSoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <div style={{ width: 16, height: 16 }}>{r.ic}</div>
               </div>
               <div style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: T.ink }}>{r.k}</div>
-              <div style={{ fontSize: 12, color: T.inkSoft }}>{r.v}</div>
+              <div style={{ fontSize: 12, color: T.inkSoft, textTransform: r.onClick ? 'uppercase' : 'none', fontFamily: r.onClick ? fonts.mono : fonts.sans }}>{r.v}</div>
               <div style={{ width: 12, height: 12, color: T.inkMute }}>{I.chev}</div>
             </div>
           ))}

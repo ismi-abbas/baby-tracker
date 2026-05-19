@@ -4,9 +4,8 @@ import { BackBtn, Card, iconBtnStyle, primaryBtnStyle, useNav, DateTimeField } f
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
 import { useEditRecord } from '../hooks/useEditRecord';
+import { cmToDisplay, lengthDeltaToCm, gramsToDisplay, useUnitPrefs, weightDeltaToGrams } from '../units';
 import type { GrowthEntry } from '../types';
-
-type Units = 'metric' | 'imperial';
 
 function toLocalDate(d: Date) {
   const p = (n: number) => String(n).padStart(2, '0');
@@ -16,8 +15,8 @@ function toLocalDate(d: Date) {
 export function GrowthEntryScreen() {
   const { back } = useNav();
   const { baby, babyApi: api } = useBaby();
+  const { prefs } = useUnitPrefs();
   const { editId, record: editRecord } = useEditRecord<GrowthEntry>(id => api.growth.get(id) as Promise<GrowthEntry>);
-  const [units, setUnits] = useState<Units>('metric');
   const [weightG, setWeightG] = useState(0);
   const [lengthCm, setLengthCm] = useState(0);
   const [headCm, setHeadCm] = useState(0);
@@ -46,17 +45,19 @@ export function GrowthEntryScreen() {
   }
 
   function adjust(field: 'weight' | 'length' | 'head', delta: number) {
-    if (field === 'weight') setWeightG(v => Math.max(0, v + delta));
-    if (field === 'length') setLengthCm(v => Math.max(0, Math.round((v + delta) * 10) / 10));
-    if (field === 'head') setHeadCm(v => Math.max(0, Math.round((v + delta) * 10) / 10));
+    if (field === 'weight') setWeightG(v => Math.max(0, v + weightDeltaToGrams(delta, prefs.weightUnit)));
+    if (field === 'length') setLengthCm(v => Math.max(0, Math.round((v + lengthDeltaToCm(delta, prefs.lengthUnit)) * 10) / 10));
+    if (field === 'head') setHeadCm(v => Math.max(0, Math.round((v + lengthDeltaToCm(delta, prefs.lengthUnit)) * 10) / 10));
   }
 
   const babyName = baby?.name?.split(' ')[0] ?? '…';
 
+  const weightSteps = prefs.weightUnit === 'lb' ? [-0.5, -0.1, 0.1, 0.5] : [-0.1, -0.05, 0.05, 0.1];
+  const lengthSteps = prefs.lengthUnit === 'in' ? [-1, -0.5, 0.5, 1] : [-1, -0.5, 0.5, 1];
   const metrics = [
-    { key: 'weight' as const, label: 'Weight', val: units === 'metric' ? (weightG ? (weightG / 1000).toFixed(2) : '—') : (weightG ? (weightG / 453.6).toFixed(1) : '—'), unit: units === 'metric' ? 'kg' : 'lb', color: T.rose, soft: T.roseSoft, bigStep: 100, smallStep: 100 },
-    { key: 'length' as const, label: 'Length', val: units === 'metric' ? (lengthCm ? lengthCm.toFixed(1) : '—') : (lengthCm ? (lengthCm / 2.54).toFixed(1) : '—'), unit: units === 'metric' ? 'cm' : 'in', color: T.sage, soft: T.sageSoft, bigStep: 1, smallStep: 0.5 },
-    { key: 'head' as const, label: 'Head', val: units === 'metric' ? (headCm ? headCm.toFixed(1) : '—') : (headCm ? (headCm / 2.54).toFixed(1) : '—'), unit: units === 'metric' ? 'cm' : 'in', color: T.terracotta, soft: T.terracottaSoft, bigStep: 1, smallStep: 0.5 },
+    { key: 'weight' as const, label: 'Weight', val: weightG ? gramsToDisplay(weightG, prefs.weightUnit).toFixed(prefs.weightUnit === 'lb' ? 1 : 2) : '—', unit: prefs.weightUnit, color: T.rose, soft: T.roseSoft, steps: weightSteps },
+    { key: 'length' as const, label: 'Length', val: lengthCm ? cmToDisplay(lengthCm, prefs.lengthUnit).toFixed(1) : '—', unit: prefs.lengthUnit, color: T.sage, soft: T.sageSoft, steps: lengthSteps },
+    { key: 'head' as const, label: 'Head', val: headCm ? cmToDisplay(headCm, prefs.lengthUnit).toFixed(1) : '—', unit: prefs.lengthUnit, color: T.terracotta, soft: T.terracottaSoft, steps: lengthSteps },
   ];
 
   return (
@@ -71,9 +72,7 @@ export function GrowthEntryScreen() {
       </div>
       <div style={{ padding: '14px 16px 0', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
         <div style={{ flex: 1 }}><DateTimeField label="Measured on" value={measuredOn} onChange={setMeasuredOn} type="date" max={toLocalDate(new Date())} /></div>
-        <div style={{ display: 'inline-flex', padding: 3, borderRadius: 9, background: 'rgba(0,0,0,0.05)', flexShrink: 0 }}>
-          {(['metric', 'imperial'] as Units[]).map(u => (<div key={u} onClick={() => setUnits(u)} style={{ padding: '8px 12px', borderRadius: 7, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', background: units === u ? T.card : 'transparent', color: units === u ? T.ink : T.inkMute, fontFamily: fonts.mono }}>{u === 'metric' ? 'kg/cm' : 'lb/in'}</div>))}
-        </div>
+        <div style={{ padding: '8px 12px', borderRadius: 9, background: 'rgba(0,0,0,0.05)', flexShrink: 0, fontFamily: fonts.mono, fontSize: 11.5, fontWeight: 700, color: T.inkMute }}>{prefs.weightUnit}/{prefs.lengthUnit}</div>
       </div>
       <div style={{ padding: '12px 16px 0' }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: T.inkMute, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8, paddingLeft: 4 }}>Visit type</div>
@@ -92,7 +91,7 @@ export function GrowthEntryScreen() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
-              {[[-r.bigStep, `−${r.bigStep}${r.key === 'weight' ? 'g' : ''}`], [-r.smallStep, `−${r.smallStep}`], [r.smallStep, `+${r.smallStep}`], [r.bigStep, `+${r.bigStep}${r.key === 'weight' ? 'g' : ''}`]].map(([delta, label]) => (<button key={String(delta)} onClick={() => adjust(r.key, Number(delta))} style={{ flex: 1, padding: '8px 0', borderRadius: 10, cursor: 'pointer', border: `1px solid ${Number(delta) > 0 ? r.color : T.rule}`, background: Number(delta) > 0 ? r.soft : T.parchment, color: Number(delta) > 0 ? r.color : T.inkSoft, fontFamily: fonts.mono, fontSize: 11, fontWeight: 600 }}>{String(label)}</button>))}
+              {r.steps.map(delta => (<button key={String(delta)} onClick={() => adjust(r.key, delta)} style={{ flex: 1, padding: '8px 0', borderRadius: 10, cursor: 'pointer', border: `1px solid ${delta > 0 ? r.color : T.rule}`, background: delta > 0 ? r.soft : T.parchment, color: delta > 0 ? r.color : T.inkSoft, fontFamily: fonts.mono, fontSize: 11, fontWeight: 600 }}>{delta > 0 ? `+${delta}` : delta}</button>))}
             </div>
           </Card>
         ))}

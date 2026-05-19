@@ -3,9 +3,10 @@ import { T, fonts } from '../tokens';
 import { Card, Chip, SyncBadge, TabBar, fmtDuration, fmtTimeAgo } from '../components/ui';
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
+import { formatMilk, useUnitPrefs } from '../units';
 import type { TodayStats, Feeding, DiaperChange, Sleep } from '../types';
 
-function useRecentActivities(babyApi: ReturnType<typeof import('../api/client').createBabyApi>) {
+function useRecentActivities(babyApi: ReturnType<typeof import('../api/client').createBabyApi>, milkUnit: 'ml' | 'oz') {
   const [feeds, setFeeds] = useState<Feeding[]>([]);
   const [diapers, setDiapers] = useState<DiaperChange[]>([]);
   const [sleeps, setSleeps] = useState<Sleep[]>([]);
@@ -21,7 +22,7 @@ function useRecentActivities(babyApi: ReturnType<typeof import('../api/client').
     ...feeds.slice(0, 2).map(f => ({
       icon: I.feed, color: T.terracotta, soft: T.terracottaSoft,
       title: f.type === 'breast' ? `Breastfed · ${f.side ? f.side.charAt(0).toUpperCase() + f.side.slice(1) : 'Both'} side` : `Bottle feed`,
-      sub: f.durationSeconds ? fmtDuration(f.durationSeconds) : f.amountMl ? `${f.amountMl} ml` : '',
+      sub: f.durationSeconds ? fmtDuration(f.durationSeconds) : f.amountMl ? formatMilk(f.amountMl, milkUnit) : '',
       by: f.loggedBy ?? 'You', time: f.startedAt,
     })),
     ...diapers.slice(0, 1).map(d => ({
@@ -47,8 +48,9 @@ function ageWeeks(birthDate: string) {
 
 export function HomeScreen() {
   const { baby, babyApi } = useBaby();
+  const { prefs } = useUnitPrefs();
   const [stats, setStats] = useState<TodayStats | null>(null);
-  const activities = useRecentActivities(babyApi);
+  const activities = useRecentActivities(babyApi, prefs.milkUnit);
 
   useEffect(() => {
     if (!baby) return;
@@ -132,7 +134,7 @@ export function HomeScreen() {
               ['Feeds',   String(feedCount),                              T.terracotta, '/ 8 goal'],
               ['Diapers', String(diaperCount),                           T.earth,      `${stats?.wetDiapers ?? 0} wet`],
               ['Sleep',   sleepSec > 0 ? fmtDuration(sleepSec).replace(' ', '') : '—', T.sage,   `${stats?.sleepCount ?? 0} naps`],
-              ['Pumped',  pumpedMl > 0 ? String(pumpedMl) : '—',        T.honey,      'ml'],
+              ['Pumped',  pumpedMl > 0 ? formatMilk(pumpedMl, prefs.milkUnit).split(' ')[0] : '—', T.honey, prefs.milkUnit],
             ].map(([label, val, col, sub]) => (
               <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
                 <div style={{ fontSize: 10.5, color: T.inkMute, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.4, whiteSpace: 'nowrap' }}>{label}</div>

@@ -10,9 +10,11 @@
     "build": "pnpm --filter app build",
     "deploy:api": "pnpm --filter api deploy",
     "deploy:app": "pnpm --filter app deploy",
-    "deploy": "pnpm deploy:api && pnpm deploy:app"
+    "deploy": "pnpm deploy:api && pnpm deploy:app",
+    "dev": "concurrently \"pnpm dev:api\" \"pnpm dev:app\""
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "wrangler": "^4.14.0"
   }
 }

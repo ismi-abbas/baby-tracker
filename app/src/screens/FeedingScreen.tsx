@@ -7,6 +7,7 @@ import {
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
 import { useEditRecord } from '../hooks/useEditRecord';
+import { formatMilk, milkDeltaToMl, mlToDisplay, useUnitPrefs } from '../units';
 import type { Feeding } from '../types';
 
 type FeedMode = 'Breast' | 'Bottle' | 'Formula' | 'Solids';
@@ -19,6 +20,7 @@ function toLocalDT(d: Date) {
 
 export function FeedingScreen() {
   const { babyApi: api } = useBaby();
+  const { prefs } = useUnitPrefs();
   const { back } = useNav();
   const { editId, record: editRecord } = useEditRecord<Feeding>(id => api.feedings.get(id) as Promise<Feeding>);
   const [feedMode, setFeedMode] = useState<FeedMode>('Breast');
@@ -51,14 +53,14 @@ export function FeedingScreen() {
   }, [running, activeSide]);
 
   useEffect(() => {
-    if (entryMode === 'manual') {
+    if (entryMode === 'manual' && !editId) {
       setRunning(false);
       if (intervalRef.current) clearInterval(intervalRef.current);
       const now = new Date();
       setManualStart(toLocalDT(now));
       setManualEnd(toLocalDT(now));
     }
-  }, [entryMode]);
+  }, [entryMode, editId]);
 
   // Pre-fill when editing an existing record
   useEffect(() => {
@@ -113,6 +115,10 @@ export function FeedingScreen() {
   const fmtSide = (sec: number) =>
     `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
   const needsAmount = feedMode === 'Bottle' || feedMode === 'Formula';
+  const amountSteps = prefs.milkUnit === 'oz' ? [-1, -0.5, 0.5, 1] : [-10, -5, 5, 10];
+  const amountDisplay = prefs.milkUnit === 'oz'
+    ? mlToDisplay(manualAmountMl, prefs.milkUnit).toFixed(1)
+    : String(manualAmountMl);
 
   return (
     <div style={{ width: '100%', minHeight: '100%', background: T.cream, fontFamily: fonts.sans, display: 'flex', flexDirection: 'column', paddingTop: 'max(20px, env(safe-area-inset-top))', boxSizing: 'border-box' }}>
@@ -178,18 +184,19 @@ export function FeedingScreen() {
           {needsAmount && (
             <div style={{ padding: '12px 16px 0' }}>
               <Card pad={14}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: T.inkMute, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 }}>Amount (ml)</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.inkMute, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 }}>Amount ({prefs.milkUnit})</div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-                  <div style={{ fontFamily: fonts.serif, fontSize: 36, color: T.ink, fontWeight: 500, minWidth: 80, textAlign: 'center' }}>{manualAmountMl}</div>
+                  <div style={{ fontFamily: fonts.serif, fontSize: 36, color: T.ink, fontWeight: 500, minWidth: 80, textAlign: 'center' }}>{amountDisplay}</div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    {[-10, -5, +5, +10].map(d => (
-                      <button key={d} onClick={() => setManualAmountMl(v => Math.max(0, v + d))} style={{
+                    {amountSteps.map(d => (
+                      <button key={d} onClick={() => setManualAmountMl(v => Math.max(0, v + milkDeltaToMl(d, prefs.milkUnit)))} style={{
                         padding: '8px 10px', borderRadius: 10, border: `1px solid ${T.rule}`,
                         background: T.card, color: T.ink, fontFamily: fonts.mono, fontSize: 12, fontWeight: 600, cursor: 'pointer',
                       }}>{d > 0 ? `+${d}` : d}</button>
                     ))}
                   </div>
                 </div>
+                {prefs.milkUnit === 'oz' && <div style={{ textAlign: 'center', marginTop: 6, fontSize: 11, color: T.inkMute }}>{formatMilk(manualAmountMl, 'ml')}</div>}
               </Card>
             </div>
           )}
@@ -221,18 +228,19 @@ export function FeedingScreen() {
 
           {needsAmount && (
             <Card pad={14}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: T.inkMute, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 }}>Amount (ml)</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.inkMute, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 }}>Amount ({prefs.milkUnit})</div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-                <div style={{ fontFamily: fonts.serif, fontSize: 36, color: T.ink, fontWeight: 500, minWidth: 80, textAlign: 'center' }}>{manualAmountMl}</div>
+                <div style={{ fontFamily: fonts.serif, fontSize: 36, color: T.ink, fontWeight: 500, minWidth: 80, textAlign: 'center' }}>{amountDisplay}</div>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  {[-10, -5, +5, +10].map(d => (
-                    <button key={d} onClick={() => setManualAmountMl(v => Math.max(0, v + d))} style={{
+                  {amountSteps.map(d => (
+                    <button key={d} onClick={() => setManualAmountMl(v => Math.max(0, v + milkDeltaToMl(d, prefs.milkUnit)))} style={{
                       padding: '8px 10px', borderRadius: 10, border: `1px solid ${T.rule}`,
                       background: T.card, color: T.ink, fontFamily: fonts.mono, fontSize: 12, fontWeight: 600, cursor: 'pointer',
                     }}>{d > 0 ? `+${d}` : d}</button>
                   ))}
                 </div>
               </div>
+              {prefs.milkUnit === 'oz' && <div style={{ textAlign: 'center', marginTop: 6, fontSize: 11, color: T.inkMute }}>{formatMilk(manualAmountMl, 'ml')}</div>}
             </Card>
           )}
         </div>

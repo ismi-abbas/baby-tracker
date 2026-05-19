@@ -37,6 +37,10 @@ export function createBabyApi(babyId: string) {
       create: (data: unknown)             => post(`/babies/${b}/caregivers`, data),
       remove: (id: string)                => del(`/babies/${b}/caregivers/${id}`),
     },
+    members: {
+      list:   ()                          => get(`/babies/${b}/members`),
+      invite: (email: string)             => post(`/babies/${b}/members`, { email }),
+    },
     feedings: {
       get:    (id: string)                => get(`/babies/${b}/feedings/${id}`),
       list:   (limit = 50)                => get(`/babies/${b}/feedings?limit=${limit}`),

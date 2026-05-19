@@ -4,6 +4,7 @@ import { BackBtn, CircularTimer, useTimer, iconBtnStyle, useNav, Chip, EntryMode
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
 import { useEditRecord } from '../hooks/useEditRecord';
+import { formatMilk, milkDeltaToMl, mlToDisplay, useUnitPrefs } from '../units';
 import type { PumpingSession } from '../types';
 
 type Storage = 'fridge' | 'freezer' | 'feed_now';
@@ -16,6 +17,7 @@ function toLocalDT(d: Date) {
 export function PumpingScreen() {
   const { back } = useNav();
   const { babyApi: api } = useBaby();
+  const { prefs } = useUnitPrefs();
   const { editId, record: editRecord } = useEditRecord<PumpingSession>(id => api.pumping.get(id) as Promise<PumpingSession>);
   const [entryMode, setEntryMode] = useState<'live' | 'manual'>('live');
   const [running, setRunning] = useState(false);
@@ -57,9 +59,19 @@ export function PumpingScreen() {
   }
 
   function adjust(side: 'left' | 'right', d: number) {
-    if (side === 'left') setLeftMl(v => Math.max(0, v + d));
-    else setRightMl(v => Math.max(0, v + d));
+    const deltaMl = milkDeltaToMl(d, prefs.milkUnit);
+    if (side === 'left') setLeftMl(v => Math.max(0, v + deltaMl));
+    else setRightMl(v => Math.max(0, v + deltaMl));
   }
+
+  function setVolume(side: 'left' | 'right', value: string) {
+    const parsed = Number(value);
+    const nextMl = Number.isFinite(parsed) ? milkDeltaToMl(Math.max(0, parsed), prefs.milkUnit) : 0;
+    if (side === 'left') setLeftMl(nextMl);
+    else setRightMl(nextMl);
+  }
+
+  const amountSteps = prefs.milkUnit === 'oz' ? [-1, -0.5, 0.5, 1] : [-10, -5, 5, 10];
 
   return (
     <div style={{ width: '100%', minHeight: '100%', background: T.cream, fontFamily: fonts.sans, display: 'flex', flexDirection: 'column', paddingTop: 'max(20px, env(safe-area-inset-top))', boxSizing: 'border-box' }}>
@@ -77,13 +89,25 @@ export function PumpingScreen() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {(['left', 'right'] as const).map(side => {
             const vol = side === 'left' ? leftMl : rightMl;
+            const displayVol = prefs.milkUnit === 'oz' ? mlToDisplay(vol, prefs.milkUnit).toFixed(1) : String(vol);
             return (
               <div key={side} style={{ padding: 14, borderRadius: 18, background: T.card, border: `1px solid ${T.rule}` }}>
                 <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: T.inkMute, marginBottom: 4 }}>{side.charAt(0).toUpperCase() + side.slice(1)}</div>
-                <div style={{ fontFamily: fonts.serif, fontSize: 28, fontWeight: 500, color: T.ink, fontVariantNumeric: 'tabular-nums' }}>{vol}<span style={{ fontSize: 13, color: T.inkMute, marginLeft: 3, fontStyle: 'italic' }}>ml</span></div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                  <input
+                    type="number"
+                    min="0"
+                    step={prefs.milkUnit === 'oz' ? '0.1' : '1'}
+                    inputMode="decimal"
+                    value={displayVol}
+                    onChange={e => setVolume(side, e.target.value)}
+                    style={{ width: 70, border: 'none', outline: 'none', background: 'transparent', fontFamily: fonts.serif, fontSize: 28, fontWeight: 500, color: T.ink, fontVariantNumeric: 'tabular-nums', padding: 0 }}
+                  />
+                  <span style={{ fontSize: 13, color: T.inkMute, fontStyle: 'italic' }}>{prefs.milkUnit}</span>
+                </div>
                 <div style={{ height: 5, borderRadius: 3, background: T.honeySoft, marginTop: 8, overflow: 'hidden' }}><div style={{ width: `${Math.min(100, (vol / 120) * 100)}%`, height: '100%', background: T.honey, transition: 'width 0.2s' }} /></div>
                 <div style={{ display: 'flex', gap: 4, marginTop: 10 }}>
-                  {[-10, -5, +5, +10].map(d => (<button key={d} onClick={() => adjust(side, d)} style={{ flex: 1, padding: '5px 0', borderRadius: 9, border: `1px solid ${T.rule}`, background: T.parchment, color: T.ink, fontFamily: fonts.mono, fontWeight: 600, fontSize: 10.5, cursor: 'pointer' }}>{d > 0 ? `+${d}` : d}</button>))}
+                  {amountSteps.map(d => (<button key={d} onClick={() => adjust(side, d)} style={{ flex: 1, padding: '5px 0', borderRadius: 9, border: `1px solid ${T.rule}`, background: T.parchment, color: T.ink, fontFamily: fonts.mono, fontWeight: 600, fontSize: 10.5, cursor: 'pointer' }}>{d > 0 ? `+${d}` : d}</button>))}
                 </div>
               </div>
             );
@@ -91,7 +115,7 @@ export function PumpingScreen() {
         </div>
         <div style={{ marginTop: 12, padding: '12px 16px', borderRadius: 16, background: T.honeySoft, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#7C5A21' }}>Total</div>
-          <div style={{ fontFamily: fonts.serif, fontSize: 22, color: '#7C5A21', fontWeight: 600 }}>{leftMl + rightMl} ml</div>
+          <div style={{ fontFamily: fonts.serif, fontSize: 22, color: '#7C5A21', fontWeight: 600 }}>{formatMilk(leftMl + rightMl, prefs.milkUnit)}</div>
         </div>
         <div style={{ marginTop: 10, padding: '12px 14px', borderRadius: 16, background: T.card, border: `1px solid ${T.rule}`, display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ fontSize: 12, color: T.inkSoft, flex: 1 }}>Store as</div>

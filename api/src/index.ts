@@ -2,11 +2,12 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { eq, desc, gte, and, sql } from "drizzle-orm";
+import { eq, desc, gte, and, inArray, sql } from "drizzle-orm";
 import * as appSchema from "./db/schema";
 import * as authSchema from "./db/auth-schema";
 import {
   babies,
+  babyMembers,
   caregivers,
   feedings,
   sleeps,
@@ -16,6 +17,7 @@ import {
   growthEntries,
   doctorVisits,
 } from "./db/schema";
+import { user } from "./db/auth-schema";
 import { createAuth } from "./auth";
 
 const fullSchema = { ...appSchema, ...authSchema };
@@ -35,6 +37,8 @@ function getDb(databaseUrl: string) {
 
 type Variables = {
   userId: string;
+  userName: string;
+  userEmail: string;
 };
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -61,6 +65,19 @@ function todayStart(): string {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d.toISOString();
+}
+
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+function withLogger<T extends Record<string, unknown>>(body: T, name: string): T & { loggedBy: string } {
+  return { ...body, loggedBy: name };
 }
 
 // ─── Auth routes ──────────────────────────────────────────────────
@@ -98,6 +115,42 @@ app.use("/api/babies/*", async (c, next) => {
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
   if (!session) return c.json({ error: "unauthorized" }, 401);
   c.set("userId", session.user.id);
+  c.set("userName", session.user.name ?? session.user.email ?? "You");
+  c.set("userEmail", session.user.email ?? "");
+  const match = c.req.path.match(/^\/api\/babies\/([^/]+)/);
+  if (match) {
+    const db = getDb(c.env.DATABASE_URL);
+    const babyId = match[1];
+    const [member] = await db
+      .select()
+      .from(babyMembers)
+      .where(and(eq(babyMembers.babyId, babyId), eq(babyMembers.userId, session.user.id)));
+    if (!member) {
+      const existingMembers = await db.select().from(babyMembers).where(eq(babyMembers.babyId, babyId)).limit(1);
+      if (existingMembers.length > 0) return c.json({ error: "forbidden" }, 403);
+      const [baby] = await db.select().from(babies).where(eq(babies.id, babyId));
+      if (!baby) return c.json({ error: "not found" }, 404);
+      await db.insert(babyMembers).values({ id: uid(), babyId, userId: session.user.id, role: "owner", createdAt: now() });
+    }
+  }
+  await next();
+});
+
+app.use("/api/babies", async (c, next) => {
+  const { protocol, host } = new URL(c.req.raw.url);
+  const auth = createAuth(
+    c.env.DATABASE_URL,
+    c.env.BETTER_AUTH_SECRET,
+    `${protocol}//${host}`,
+    c.env.GOOGLE_CLIENT_ID,
+    c.env.GOOGLE_CLIENT_SECRET,
+    c.env.FRONTEND_URL,
+  );
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  if (!session) return c.json({ error: "unauthorized" }, 401);
+  c.set("userId", session.user.id);
+  c.set("userName", session.user.name ?? session.user.email ?? "You");
+  c.set("userEmail", session.user.email ?? "");
   await next();
 });
 
@@ -120,7 +173,20 @@ app.use("/api/seed", async (c, next) => {
 
 app.get("/api/babies", async (c) => {
   const db = getDb(c.env.DATABASE_URL);
-  const rows = await db.select().from(babies).orderBy(desc(babies.createdAt));
+  const userId = c.get("userId");
+  let memberships = await db.select().from(babyMembers).where(eq(babyMembers.userId, userId));
+  const anyMembership = await db.select().from(babyMembers).limit(1);
+  if (memberships.length === 0 && anyMembership.length === 0) {
+    const existingBabies = await db.select().from(babies).orderBy(desc(babies.createdAt));
+    await Promise.all(existingBabies.map((baby) => db.insert(babyMembers).values({ id: uid(), babyId: baby.id, userId, role: "owner", createdAt: now() })));
+    memberships = await db.select().from(babyMembers).where(eq(babyMembers.userId, userId));
+  }
+  if (memberships.length === 0) return c.json([]);
+  const rows = await db
+    .select()
+    .from(babies)
+    .where(inArray(babies.id, memberships.map((m) => m.babyId)))
+    .orderBy(desc(babies.createdAt));
   return c.json(rows);
 });
 
@@ -139,6 +205,7 @@ app.post("/api/babies", async (c) => {
   const body = await c.req.json();
   const row = { id: uid(), ...body, createdAt: now() };
   await db.insert(babies).values(row);
+  await db.insert(babyMembers).values({ id: uid(), babyId: row.id, userId: c.get("userId"), role: "owner", createdAt: now() });
   return c.json(row, 201);
 });
 
@@ -183,6 +250,50 @@ app.delete("/api/babies/:babyId/caregivers/:id", async (c) => {
   return c.json({ ok: true });
 });
 
+// ─── Sharing ───────────────────────────────────────────────────────
+
+app.get("/api/babies/:babyId/members", async (c) => {
+  const db = getDb(c.env.DATABASE_URL);
+  const rows = await db
+    .select({ id: babyMembers.id, babyId: babyMembers.babyId, userId: babyMembers.userId, role: babyMembers.role, createdAt: babyMembers.createdAt, name: user.name, email: user.email })
+    .from(babyMembers)
+    .innerJoin(user, eq(babyMembers.userId, user.id))
+    .where(eq(babyMembers.babyId, c.req.param("babyId")));
+  return c.json(rows);
+});
+
+app.post("/api/babies/:babyId/members", async (c) => {
+  const db = getDb(c.env.DATABASE_URL);
+  const body = await c.req.json();
+  const email = String(body.email ?? "").trim().toLowerCase();
+  if (!email) return c.json({ error: "email required" }, 400);
+
+  const [invitee] = await db.select().from(user).where(eq(user.email, email));
+  if (!invitee) return c.json({ error: "No account found for that email" }, 404);
+
+  const babyId = c.req.param("babyId");
+  const [existing] = await db
+    .select()
+    .from(babyMembers)
+    .where(and(eq(babyMembers.babyId, babyId), eq(babyMembers.userId, invitee.id)));
+  if (existing) return c.json({ ok: true, member: existing });
+
+  const member = { id: uid(), babyId, userId: invitee.id, role: "parent", createdAt: now() };
+  await db.insert(babyMembers).values(member);
+
+  await db.insert(caregivers).values({
+    id: uid(),
+    babyId,
+    name: invitee.name,
+    role: "Parent",
+    permission: "admin",
+    initials: initials(invitee.name),
+    createdAt: now(),
+  });
+
+  return c.json({ ok: true, member }, 201);
+});
+
 // ─── Feedings ─────────────────────────────────────────────────────
 
 app.get("/api/babies/:babyId/feedings/:id", async (c) => {
@@ -206,7 +317,7 @@ app.get("/api/babies/:babyId/feedings", async (c) => {
 
 app.post("/api/babies/:babyId/feedings", async (c) => {
   const db = getDb(c.env.DATABASE_URL);
-  const body = await c.req.json();
+  const body = withLogger(await c.req.json(), c.get("userName"));
   const row = { id: uid(), babyId: c.req.param("babyId"), ...body, createdAt: now() };
   await db.insert(feedings).values(row);
   return c.json(row, 201);
@@ -256,7 +367,7 @@ app.get("/api/babies/:babyId/sleeps", async (c) => {
 
 app.post("/api/babies/:babyId/sleeps", async (c) => {
   const db = getDb(c.env.DATABASE_URL);
-  const body = await c.req.json();
+  const body = withLogger(await c.req.json(), c.get("userName"));
   const row = { id: uid(), babyId: c.req.param("babyId"), ...body, createdAt: now() };
   await db.insert(sleeps).values(row);
   return c.json(row, 201);
@@ -306,7 +417,7 @@ app.get("/api/babies/:babyId/pumping", async (c) => {
 
 app.post("/api/babies/:babyId/pumping", async (c) => {
   const db = getDb(c.env.DATABASE_URL);
-  const body = await c.req.json();
+  const body = withLogger(await c.req.json(), c.get("userName"));
   const left = body.leftMl ?? 0;
   const right = body.rightMl ?? 0;
   const row = {
@@ -385,7 +496,7 @@ app.get("/api/babies/:babyId/diapers", async (c) => {
 
 app.post("/api/babies/:babyId/diapers", async (c) => {
   const db = getDb(c.env.DATABASE_URL);
-  const body = await c.req.json();
+  const body = withLogger(await c.req.json(), c.get("userName"));
   const row = { id: uid(), babyId: c.req.param("babyId"), ...body, createdAt: now() };
   await db.insert(diaperChanges).values(row);
   return c.json(row, 201);
@@ -439,7 +550,7 @@ app.get("/api/babies/:babyId/baths", async (c) => {
 
 app.post("/api/babies/:babyId/baths", async (c) => {
   const db = getDb(c.env.DATABASE_URL);
-  const body = await c.req.json();
+  const body = withLogger(await c.req.json(), c.get("userName"));
   const row = { id: uid(), babyId: c.req.param("babyId"), ...body, createdAt: now() };
   await db.insert(baths).values(row);
   return c.json(row, 201);
@@ -489,7 +600,7 @@ app.get("/api/babies/:babyId/growth", async (c) => {
 
 app.post("/api/babies/:babyId/growth", async (c) => {
   const db = getDb(c.env.DATABASE_URL);
-  const body = await c.req.json();
+  const body = withLogger(await c.req.json(), c.get("userName"));
   const row = { id: uid(), babyId: c.req.param("babyId"), ...body, createdAt: now() };
   await db.insert(growthEntries).values(row);
   return c.json(row, 201);
