@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { T, fonts } from '../tokens';
 import { BackBtn, Card, PillBtn, iconBtnStyle, primaryBtnStyle, softBtnStyle, useNav } from '../components/ui';
 import { I } from '../components/Icons';
-import { api } from '../api/client';
+import { useBaby } from '../context/BabyContext';
 
 type DiaperType = 'wet' | 'dirty' | 'mixed';
 type Consistency = 'Soft' | 'Seedy' | 'Watery' | 'Hard' | 'Mucousy';
@@ -10,6 +10,7 @@ type Consistency = 'Soft' | 'Seedy' | 'Watery' | 'Hard' | 'Mucousy';
 const COLORS = ['#C5A06A', '#8C5E2A', '#5A4A2A', '#3F5F3A', '#7A4040'];
 
 export function DiaperScreen() {
+  const { babyApi: api } = useBaby();
   const { back } = useNav();
   const [type, setType] = useState<DiaperType>('wet');
   const [consistency, setConsistency] = useState<Consistency | null>(null);

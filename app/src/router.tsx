@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import {
-  createRootRoute,
-  createRoute,
-  createRouter,
-  Outlet,
-  useRouterState,
+  createRootRoute, createRoute, createRouter,
+  Outlet, useRouterState, useNavigate,
 } from '@tanstack/react-router';
 import { useSession } from './auth/client';
 import { NavCtx } from './components/ui';
 import { QuickLogSheet } from './components/ui';
+import { BabyProvider, useBaby } from './context/BabyContext';
 import { LoginScreen } from './screens/LoginScreen';
+import { SetupScreen } from './screens/SetupScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { TimelineScreen } from './screens/TimelineScreen';
 import { GrowthChartScreen } from './screens/GrowthChartScreen';
@@ -23,28 +22,29 @@ import { BathScreen } from './screens/BathScreen';
 import { GrowthEntryScreen } from './screens/GrowthEntryScreen';
 import { T } from './tokens';
 
-function RootLayout() {
-  const { data: session, isPending } = useSession();
+// ─── Inner layout — rendered inside BabyProvider ─────────────────
+
+function AppLayout() {
+  const { baby, loading: babyLoading } = useBaby();
   const [sheetOpen, setSheetOpen] = useState(false);
   const { location } = useRouterState();
+  const navigate = useNavigate();
 
-  // Close sheet on navigation
   useEffect(() => { setSheetOpen(false); }, [location.pathname]);
 
-  if (isPending) {
+  useEffect(() => {
+    if (!babyLoading && !baby && location.pathname !== '/setup') {
+      navigate({ to: '/setup', replace: true });
+    }
+    if (!babyLoading && baby && location.pathname === '/setup') {
+      navigate({ to: '/', replace: true });
+    }
+  }, [babyLoading, baby, location.pathname, navigate]);
+
+  if (babyLoading) {
     return (
       <div className="nb-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.cream }}>
         <div style={{ fontSize: 32 }}>👶</div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return (
-      <div className="nb-shell">
-        <div className="nb-scroll">
-          <LoginScreen />
-        </div>
       </div>
     );
   }
@@ -65,32 +65,59 @@ function RootLayout() {
   );
 }
 
-const rootRoute = createRootRoute({ component: RootLayout });
+// ─── Root layout — handles auth ────────────────────────────────────
 
-const homeRoute        = createRoute({ getParentRoute: () => rootRoute, path: '/',                  component: HomeScreen });
-const timelineRoute    = createRoute({ getParentRoute: () => rootRoute, path: '/timeline',           component: TimelineScreen });
-const growthRoute      = createRoute({ getParentRoute: () => rootRoute, path: '/growth',             component: GrowthChartScreen });
-const profileRoute     = createRoute({ getParentRoute: () => rootRoute, path: '/profile',            component: ProfileScreen });
-const insightsRoute    = createRoute({ getParentRoute: () => rootRoute, path: '/insights',           component: InsightsScreen });
-const feedingRoute     = createRoute({ getParentRoute: () => rootRoute, path: '/log/feeding',        component: FeedingScreen });
-const sleepRoute       = createRoute({ getParentRoute: () => rootRoute, path: '/log/sleep',          component: SleepScreen });
-const pumpingRoute     = createRoute({ getParentRoute: () => rootRoute, path: '/log/pumping',        component: PumpingScreen });
-const diaperRoute      = createRoute({ getParentRoute: () => rootRoute, path: '/log/diaper',         component: DiaperScreen });
-const bathRoute        = createRoute({ getParentRoute: () => rootRoute, path: '/log/bath',           component: BathScreen });
-const growthEntryRoute = createRoute({ getParentRoute: () => rootRoute, path: '/log/growth-entry',   component: GrowthEntryScreen });
+function RootLayout() {
+  const { data: session, isPending } = useSession();
+
+  if (isPending) {
+    return (
+      <div className="nb-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.cream }}>
+        <div style={{ fontSize: 32 }}>👶</div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="nb-shell">
+        <div className="nb-scroll">
+          <LoginScreen />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <BabyProvider>
+      <AppLayout />
+    </BabyProvider>
+  );
+}
+
+// ─── Routes ────────────────────────────────────────────────────────
+
+const rootRoute        = createRootRoute({ component: RootLayout });
+const homeRoute        = createRoute({ getParentRoute: () => rootRoute, path: '/',                 component: HomeScreen });
+const setupRoute       = createRoute({ getParentRoute: () => rootRoute, path: '/setup',            component: SetupScreen });
+const timelineRoute    = createRoute({ getParentRoute: () => rootRoute, path: '/timeline',          component: TimelineScreen });
+const growthRoute      = createRoute({ getParentRoute: () => rootRoute, path: '/growth',            component: GrowthChartScreen });
+const profileRoute     = createRoute({ getParentRoute: () => rootRoute, path: '/profile',           component: ProfileScreen });
+const insightsRoute    = createRoute({ getParentRoute: () => rootRoute, path: '/insights',          component: InsightsScreen });
+const feedingRoute     = createRoute({ getParentRoute: () => rootRoute, path: '/log/feeding',       component: FeedingScreen });
+const sleepRoute       = createRoute({ getParentRoute: () => rootRoute, path: '/log/sleep',         component: SleepScreen });
+const pumpingRoute     = createRoute({ getParentRoute: () => rootRoute, path: '/log/pumping',       component: PumpingScreen });
+const diaperRoute      = createRoute({ getParentRoute: () => rootRoute, path: '/log/diaper',        component: DiaperScreen });
+const bathRoute        = createRoute({ getParentRoute: () => rootRoute, path: '/log/bath',          component: BathScreen });
+const growthEntryRoute = createRoute({ getParentRoute: () => rootRoute, path: '/log/growth-entry',  component: GrowthEntryScreen });
 
 const routeTree = rootRoute.addChildren([
-  homeRoute, timelineRoute, growthRoute, profileRoute, insightsRoute,
+  homeRoute, setupRoute, timelineRoute, growthRoute, profileRoute, insightsRoute,
   feedingRoute, sleepRoute, pumpingRoute, diaperRoute, bathRoute, growthEntryRoute,
 ]);
 
-export const router = createRouter({
-  routeTree,
-  defaultPreload: 'intent',
-});
+export const router = createRouter({ routeTree, defaultPreload: 'intent' });
 
 declare module '@tanstack/react-router' {
-  interface Register {
-    router: typeof router;
-  }
+  interface Register { router: typeof router; }
 }

@@ -28,4 +28,3 @@ export const fonts = {
   mono:  '"JetBrains Mono", ui-monospace, "SF Mono", monospace',
 } as const;
 
-export const BABY_ID = 'saif-hakimi';

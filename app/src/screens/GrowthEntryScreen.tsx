@@ -2,16 +2,17 @@ import React, { useState } from 'react';
 import { T, fonts } from '../tokens';
 import { BackBtn, Card, Chip, iconBtnStyle, primaryBtnStyle, softBtnStyle, useNav } from '../components/ui';
 import { I } from '../components/Icons';
-import { api } from '../api/client';
+import { useBaby } from '../context/BabyContext';
 
 type Units = 'metric' | 'imperial';
 
 export function GrowthEntryScreen() {
   const { back } = useNav();
+  const { baby, babyApi: api } = useBaby();
   const [units, setUnits] = useState<Units>('metric');
-  const [weightG, setWeightG] = useState(5400);
-  const [lengthCm, setLengthCm] = useState(58);
-  const [headCm, setHeadCm] = useState(39.5);
+  const [weightG, setWeightG] = useState(0);
+  const [lengthCm, setLengthCm] = useState(0);
+  const [headCm, setHeadCm] = useState(0);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -52,7 +53,7 @@ export function GrowthEntryScreen() {
 
       <div style={{ padding: '14px 22px 0' }}>
         <div style={{ fontFamily: fonts.serif, fontSize: 26, color: T.ink, letterSpacing: -0.4 }}>
-          How's <span style={{ fontStyle: 'italic', color: T.rose }}>Saif</span> growing?
+          How's <span style={{ fontStyle: 'italic', color: T.rose }}>{baby?.name?.split(' ')[0] ?? '…'}</span> growing?
         </div>
         <div style={{ fontSize: 12.5, color: T.inkSoft, marginTop: 2 }}>Adjust values with ± buttons below each metric.</div>
       </div>

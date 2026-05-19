@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { T, fonts } from '../tokens';
 import { Card, Chip } from '../components/ui';
-import { api } from '../api/client';
+import { useBaby } from '../context/BabyContext';
 
 interface WeeklyStats {
   avgFeedsPerDay: number;
@@ -13,6 +13,7 @@ interface WeeklyStats {
 }
 
 export function InsightsScreen() {
+  const { babyApi: api } = useBaby();
   const [stats, setStats] = useState<WeeklyStats | null>(null);
 
   useEffect(() => {

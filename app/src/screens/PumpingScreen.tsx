@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { T, fonts } from '../tokens';
 import { BackBtn, CircularTimer, useTimer, iconBtnStyle, useNav, Chip } from '../components/ui';
 import { I } from '../components/Icons';
-import { api } from '../api/client';
+import { useBaby } from '../context/BabyContext';
 
 type Storage = 'fridge' | 'freezer' | 'feed_now';
 
 export function PumpingScreen() {
+  const { babyApi: api } = useBaby();
   const { back } = useNav();
   const [running, setRunning] = useState(false);
   const [startTime, setStartTime] = useState<Date | null>(null);

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { T, fonts } from '../tokens';
 import { Card, Chip, TabBar, iconBtnStyle, fmtTime } from '../components/ui';
 import { I } from '../components/Icons';
-import { api } from '../api/client';
+import { useBaby } from '../context/BabyContext';
 import type { TimelineEvent } from '../types';
 
 const CAT_CONFIG = {
@@ -41,6 +41,7 @@ const CAT_CONFIG = {
 } as const;
 
 export function TimelineScreen() {
+  const { babyApi: api } = useBaby();
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());

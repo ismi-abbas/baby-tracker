@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { T, fonts } from '../tokens';
 import { BackBtn, Card, iconBtnStyle, primaryBtnStyle, softBtnStyle, useNav } from '../components/ui';
 import { I } from '../components/Icons';
-import { api } from '../api/client';
+import { useBaby } from '../context/BabyContext';
 
 export function BathScreen() {
+  const { babyApi: api } = useBaby();
   const { back } = useNav();
   const [bathType, setBathType] = useState('Tub bath');
   const [waterTemp, setWaterTemp] = useState(37);

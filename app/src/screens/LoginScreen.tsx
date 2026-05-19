@@ -92,8 +92,7 @@ export function LoginScreen() {
           Newborn Care
         </div>
         <div style={{ fontSize: 13, color: T.inkMute, marginTop: 4 }}>
-          Track everything for{" "}
-          <span style={{ color: T.terracotta, fontWeight: 600 }}>Saif</span>
+          Track your baby's daily care
         </div>
       </div>
 

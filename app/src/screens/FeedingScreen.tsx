@@ -2,13 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { T, fonts } from '../tokens';
 import { BackBtn, CircularTimer, useTimer, iconBtnStyle, primaryBtnStyle, softBtnStyle, Card } from '../components/ui';
 import { I } from '../components/Icons';
-import { api } from '../api/client';
+import { useBaby } from '../context/BabyContext';
 import { useNav } from '../components/ui';
 
 type FeedMode = 'Breast' | 'Bottle' | 'Formula' | 'Solids';
 type Side = 'left' | 'right';
 
 export function FeedingScreen() {
+  const { babyApi: api } = useBaby();
   const { back } = useNav();
   const [mode, setMode] = useState<FeedMode>('Breast');
   const [activeSide, setActiveSide] = useState<Side>('left');

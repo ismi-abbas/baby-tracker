@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useCallback, useMemo, useState, useEffect } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
+import { useBaby } from '../context/BabyContext';
 import { T, fonts } from '../tokens';
 import { I } from './Icons';
 import type { Screen } from '../types';
@@ -189,13 +190,15 @@ export function Screen({ children, bg = T.cream, color }: { children: React.Reac
 
 export function TabBar({ active }: { active?: Screen }) {
   const { nav, screen, openSheet } = useNav();
+  const { baby } = useBaby();
   const cur = active ?? screen;
+  const babyLabel = baby?.name?.split(' ')[0] ?? 'Baby';
   const items: [Screen | 'log', string, React.ReactNode][] = [
     ['home', 'Home', I.home],
     ['timeline', 'Timeline', I.timeline],
     ['log', '', null],
     ['growth-chart', 'Growth', I.growth],
-    ['profile', 'Saif', I.baby],
+    ['profile', babyLabel, I.baby],
   ];
   return (
     <div style={{

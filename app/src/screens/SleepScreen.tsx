@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { T, fonts } from '../tokens';
 import { BackBtn, useTimer, iconBtnStyle, useNav } from '../components/ui';
 import { I } from '../components/Icons';
-import { api } from '../api/client';
+import { useBaby } from '../context/BabyContext';
 
 export function SleepScreen() {
+  const { babyApi: api } = useBaby();
   const { back } = useNav();
   const [running, setRunning] = useState(false);
   const [startTime, setStartTime] = useState<Date | null>(null);
