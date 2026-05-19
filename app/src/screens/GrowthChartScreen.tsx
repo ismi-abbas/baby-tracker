@@ -1,19 +1,30 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { T, fonts } from '../tokens';
 import { Card, Chip, TabBar, iconBtnStyle, useNav } from '../components/ui';
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
 import type { GrowthEntry } from '../types';
 
+type Metric = 'weight' | 'length' | 'head';
+
 const WHO_MONTHS = [0,1,2,3,4,5,6,7,8,9,10,11,12];
 const WHO_P3  = [2.5,3.4,4.4,5.1,5.6,6.1,6.4,6.7,7.0,7.2,7.5,7.7,7.9];
 const WHO_P50 = [3.3,4.5,5.6,6.4,7.0,7.5,7.9,8.3,8.6,8.9,9.2,9.4,9.6];
 const WHO_P97 = [4.4,5.8,7.1,8.0,8.7,9.3,9.8,10.2,10.6,10.9,11.2,11.5,11.8];
 
+const METRIC_CONFIG = {
+  weight: { label: 'Weight', unit: 'kg', color: T.rose, getVal: (e: GrowthEntry) => (e.weightG ?? 0) / 1000, defaultMin: 2, defaultMax: 12.5, delta: (a: GrowthEntry, b: GrowthEntry) => `${(a.weightG ?? 0) - (b.weightG ?? 0) > 0 ? '+' : ''}${(a.weightG ?? 0) - (b.weightG ?? 0)}g` },
+  length: { label: 'Length', unit: 'cm', color: T.sage, getVal: (e: GrowthEntry) => e.lengthCm ?? 0, defaultMin: 40, defaultMax: 90, delta: (a: GrowthEntry, b: GrowthEntry) => `${((a.lengthCm ?? 0) - (b.lengthCm ?? 0) > 0 ? '+' : '')}${((a.lengthCm ?? 0) - (b.lengthCm ?? 0)).toFixed(1)}cm` },
+  head:   { label: 'Head',   unit: 'cm', color: T.terracotta, getVal: (e: GrowthEntry) => e.headCm ?? 0, defaultMin: 25, defaultMax: 55, delta: (a: GrowthEntry, b: GrowthEntry) => `${((a.headCm ?? 0) - (b.headCm ?? 0) > 0 ? '+' : '')}${((a.headCm ?? 0) - (b.headCm ?? 0)).toFixed(1)}cm` },
+} as const;
+
 export function GrowthChartScreen() {
   const { baby, babyApi } = useBaby();
   const { nav } = useNav();
+  const navigate = useNavigate();
   const [entries, setEntries] = useState<GrowthEntry[]>([]);
+  const [metric, setMetric] = useState<Metric>('weight');
 
   useEffect(() => {
     if (!baby) return;
@@ -22,8 +33,13 @@ export function GrowthChartScreen() {
       .catch(() => {});
   }, [baby, babyApi]);
 
+  const cfg = METRIC_CONFIG[metric];
   const W = 320, H = 200;
-  const wMin = 2, wMax = 12.5, xMin = 0, xMax = 12;
+  const xMin = 0, xMax = 12;
+
+  const validVals = entries.map(cfg.getVal).filter(v => v > 0);
+  const wMin = validVals.length ? Math.min(...validVals) * 0.92 : cfg.defaultMin;
+  const wMax = validVals.length ? Math.max(...validVals) * 1.08 : cfg.defaultMax;
 
   function ageMonths(iso: string) {
     if (!baby?.birthDate) return 0;
@@ -34,18 +50,18 @@ export function GrowthChartScreen() {
 
   const px = (x: number) => 22 + ((x - xMin) / (xMax - xMin)) * (W - 30);
   const py = (y: number) => 12 + (1 - (y - wMin) / (wMax - wMin)) * (H - 28);
-  const path = (arr: number[]) => arr.map((y, i) => `${i ? 'L' : 'M'} ${px(WHO_MONTHS[i])} ${py(y)}`).join(' ');
+  const whoPath = (arr: number[]) => arr.map((y, i) => `${i ? 'L' : 'M'} ${px(WHO_MONTHS[i])} ${py(y)}`).join(' ');
 
   const babyPoints = entries.map(e => {
     const x = ageMonths(e.measuredAt);
-    const y = (e.weightG ?? 0) / 1000;
+    const y = cfg.getVal(e);
     return [x, y] as [number, number];
-  }).filter(([x]) => x >= 0 && x <= 12);
+  }).filter(([x, y]) => x >= 0 && x <= 12 && y > 0);
 
   const latest = entries[entries.length - 1];
   const prev = entries[entries.length - 2];
-  const weightKg = latest ? (latest.weightG ?? 0) / 1000 : 0;
-  const delta = latest && prev ? ((latest.weightG ?? 0) - (prev.weightG ?? 0)) : null;
+  const latestVal = latest ? cfg.getVal(latest) : 0;
+  const deltaStr = latest && prev ? cfg.delta(latest, prev) : null;
   const history = entries.slice().reverse().slice(0, 5);
   const babyName = baby?.name?.split(' ')[0] ?? '…';
 
@@ -60,56 +76,65 @@ export function GrowthChartScreen() {
 
       <div style={{ padding: '12px 16px 0' }}>
         <div style={{ display: 'flex', padding: 4, borderRadius: 14, background: 'rgba(0,0,0,0.04)', gap: 2 }}>
-          {['Weight', 'Length', 'Head'].map((m, i) => (
-            <div key={m} style={{ flex: 1, padding: '8px 10px', borderRadius: 11, textAlign: 'center', fontSize: 12, fontWeight: 700, background: i === 0 ? T.card : 'transparent', color: i === 0 ? T.rose : T.inkSoft, boxShadow: i === 0 ? '0 1px 2px rgba(0,0,0,0.04)' : 'none' }}>{m}</div>
-          ))}
+          {(['weight', 'length', 'head'] as Metric[]).map((m) => {
+            const active = metric === m;
+            const mc = METRIC_CONFIG[m];
+            return (
+              <div key={m} onClick={() => setMetric(m)} style={{ flex: 1, padding: '8px 10px', borderRadius: 11, textAlign: 'center', fontSize: 12, fontWeight: 700, cursor: 'pointer', background: active ? T.card : 'transparent', color: active ? mc.color : T.inkSoft, boxShadow: active ? '0 1px 2px rgba(0,0,0,0.04)' : 'none', transition: 'all 0.15s' }}>{mc.label}</div>
+            );
+          })}
         </div>
       </div>
 
       <div style={{ padding: '14px 22px 0', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
         <div>
-          <div style={{ fontSize: 11, color: T.inkMute, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>Weight · latest</div>
+          <div style={{ fontSize: 11, color: T.inkMute, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>{cfg.label} · latest</div>
           <div style={{ fontFamily: fonts.serif, fontSize: 44, color: T.ink, fontWeight: 500, lineHeight: 1, letterSpacing: -1, marginTop: 2 }}>
-            {weightKg > 0 ? weightKg.toFixed(1) : '—'}<span style={{ fontSize: 16, color: T.inkMute, fontStyle: 'italic', marginLeft: 4 }}>kg</span>
+            {latestVal > 0 ? latestVal.toFixed(1) : '—'}<span style={{ fontSize: 16, color: T.inkMute, fontStyle: 'italic', marginLeft: 4 }}>{cfg.unit}</span>
           </div>
-          {delta !== null && (
+          {deltaStr !== null && (
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6, fontSize: 12, color: T.sage, fontWeight: 600 }}>
-              ▲ {delta > 0 ? `+${delta}` : delta} g
+              ▲ {deltaStr}
             </div>
           )}
         </div>
-        <Chip color={T.rose} soft={T.roseSoft} style={{ padding: '6px 12px', fontSize: 12.5 }}>~50th percentile</Chip>
+        {metric === 'weight' && <Chip color={T.rose} soft={T.roseSoft} style={{ padding: '6px 12px', fontSize: 12.5 }}>~50th percentile</Chip>}
       </div>
 
       <div style={{ padding: '14px 16px 0' }}>
         <Card pad={14}>
           <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="180">
-            {[3,5,7,9,11].map(v => (
-              <g key={v}>
-                <line x1="22" x2={W-8} y1={py(v)} y2={py(v)} stroke={T.rule} strokeDasharray="2 3"/>
-                <text x="2" y={py(v)+3} fontFamily="JetBrains Mono" fontSize="8" fill={T.inkMute}>{v}</text>
-              </g>
-            ))}
-            <path d={`${path(WHO_P3)} L ${px(xMax)} ${py(WHO_P97[12])} ${[...WHO_P97].reverse().map((y,i) => `L ${px(WHO_MONTHS[12-i])} ${py(y)}`).join(' ')} Z`} fill={T.roseSoft} opacity="0.45"/>
-            <path d={path(WHO_P3)}  stroke={T.inkMute} strokeWidth="1" fill="none" strokeDasharray="3 4" opacity="0.5"/>
-            <path d={path(WHO_P50)} stroke={T.rose}    strokeWidth="1.5" fill="none" opacity="0.6"/>
-            <path d={path(WHO_P97)} stroke={T.inkMute} strokeWidth="1" fill="none" strokeDasharray="3 4" opacity="0.5"/>
+            {(() => {
+              const gridVals = Array.from({ length: 4 }, (_, i) => wMin + ((wMax - wMin) / 4) * (i + 1));
+              return gridVals.map(v => (
+                <g key={v}>
+                  <line x1="22" x2={W-8} y1={py(v)} y2={py(v)} stroke={T.rule} strokeDasharray="2 3"/>
+                  <text x="2" y={py(v)+3} fontFamily="JetBrains Mono" fontSize="8" fill={T.inkMute}>{v.toFixed(metric === 'weight' ? 1 : 0)}</text>
+                </g>
+              ));
+            })()}
+            {metric === 'weight' && <>
+              <path d={`${whoPath(WHO_P3)} L ${px(xMax)} ${py(WHO_P97[12])} ${[...WHO_P97].reverse().map((y,i) => `L ${px(WHO_MONTHS[12-i])} ${py(y)}`).join(' ')} Z`} fill={T.roseSoft} opacity="0.45"/>
+              <path d={whoPath(WHO_P3)}  stroke={T.inkMute} strokeWidth="1" fill="none" strokeDasharray="3 4" opacity="0.5"/>
+              <path d={whoPath(WHO_P50)} stroke={T.rose}    strokeWidth="1.5" fill="none" opacity="0.6"/>
+              <path d={whoPath(WHO_P97)} stroke={T.inkMute} strokeWidth="1" fill="none" strokeDasharray="3 4" opacity="0.5"/>
+            </>}
             {babyPoints.length > 1 && (
               <path d={babyPoints.map(([x,y],i) => `${i?'L':'M'} ${px(x)} ${py(y)}`).join(' ')}
-                stroke={T.terracotta} strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                stroke={cfg.color} strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
             )}
             {babyPoints.map(([x,y],i) => (
-              <circle key={i} cx={px(x)} cy={py(y)} r="5" fill={T.card} stroke={T.terracotta} strokeWidth="2"/>
+              <circle key={i} cx={px(x)} cy={py(y)} r="5" fill={T.card} stroke={cfg.color} strokeWidth="2"/>
             ))}
             {babyPoints.length > 0 && (() => {
               const last = babyPoints[babyPoints.length-1];
               return (
                 <>
-                  <circle cx={px(last[0])} cy={py(last[1])} r="9" fill="none" stroke={T.terracotta} strokeWidth="1" opacity="0.4"/>
+                  <circle cx={px(last[0])} cy={py(last[1])} r="9" fill="none" stroke={cfg.color} strokeWidth="1" opacity="0.4"/>
                   <g transform={`translate(${px(last[0])+8},${py(last[1])-18})`}>
-                    <rect x="0" y="0" width="68" height="22" rx="6" fill={T.terracotta}/>
+                    <rect x="0" y="0" width="72" height="22" rx="6" fill={cfg.color}/>
                     <text x="6" y="14" fontFamily="Hanken Grotesk" fontWeight="700" fontSize="10" fill={T.card}>
-                      {babyName} · {weightKg.toFixed(1)}
+                      {babyName} · {last[1].toFixed(1)}
                     </text>
                   </g>
                 </>
@@ -120,9 +145,11 @@ export function GrowthChartScreen() {
             ))}
           </svg>
           <div style={{ display: 'flex', gap: 12, marginTop: 8, fontSize: 10.5, color: T.inkMute, flexWrap: 'wrap' }}>
-            <span><span style={{ display: 'inline-block', width: 10, height: 2, background: T.terracotta, verticalAlign: 'middle', marginRight: 4 }}/> {babyName}</span>
-            <span><span style={{ display: 'inline-block', width: 10, height: 2, background: T.rose, verticalAlign: 'middle', marginRight: 4 }}/> WHO 50th</span>
-            <span><span style={{ display: 'inline-block', width: 10, height: 1, borderTop: `1px dashed ${T.inkMute}`, verticalAlign: 'middle', marginRight: 4 }}/> 3rd / 97th</span>
+            <span><span style={{ display: 'inline-block', width: 10, height: 2, background: cfg.color, verticalAlign: 'middle', marginRight: 4 }}/> {babyName}</span>
+            {metric === 'weight' && <>
+              <span><span style={{ display: 'inline-block', width: 10, height: 2, background: T.rose, verticalAlign: 'middle', marginRight: 4 }}/> WHO 50th</span>
+              <span><span style={{ display: 'inline-block', width: 10, height: 1, borderTop: `1px dashed ${T.inkMute}`, verticalAlign: 'middle', marginRight: 4 }}/> 3rd / 97th</span>
+            </>}
           </div>
         </Card>
       </div>
@@ -133,18 +160,19 @@ export function GrowthChartScreen() {
           {history.length === 0 ? (
             <div style={{ padding: '20px 14px', textAlign: 'center', color: T.inkMute, fontSize: 13 }}>No measurements yet</div>
           ) : history.map((e, i) => {
-            const kg = (e.weightG ?? 0) / 1000;
+            const val = cfg.getVal(e);
             const prevEntry = history[i+1];
-            const diff = prevEntry ? (e.weightG ?? 0) - (prevEntry.weightG ?? 0) : null;
+            const prevVal = prevEntry ? cfg.getVal(prevEntry) : null;
+            const diffStr = prevVal !== null && val > 0 && prevVal > 0 ? cfg.delta(e, prevEntry!) : null;
             return (
-              <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderTop: i ? `1px solid ${T.rule}` : 'none' }}>
+              <div key={e.id} onClick={() => navigate({ to: '/log/growth-entry', search: { id: e.id } as never })} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderTop: i ? `1px solid ${T.rule}` : 'none', cursor: 'pointer' }}>
                 <div style={{ fontSize: 12.5, color: T.inkSoft, flex: 1 }}>
                   {new Date(e.measuredAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                   {e.visitType === 'doctor' ? ' · Dr. visit' : ''}
                 </div>
-                <div style={{ fontFamily: fonts.serif, fontSize: 16, color: T.ink, fontWeight: 500 }}>{kg.toFixed(2)} kg</div>
-                <div style={{ width: 60, textAlign: 'right', fontSize: 11.5, fontWeight: 600, color: diff !== null && diff > 0 ? T.sage : T.inkMute }}>
-                  {diff !== null ? `+${diff}g` : '—'}
+                <div style={{ fontFamily: fonts.serif, fontSize: 16, color: val > 0 ? T.ink : T.inkMute, fontWeight: 500 }}>{val > 0 ? val.toFixed(metric === 'weight' ? 2 : 1) : '—'} <span style={{ fontSize: 11, color: T.inkMute, fontStyle: 'italic' }}>{cfg.unit}</span></div>
+                <div style={{ width: 64, textAlign: 'right', fontSize: 11.5, fontWeight: 600, color: diffStr ? T.sage : T.inkMute }}>
+                  {diffStr ?? '—'}
                 </div>
               </div>
             );

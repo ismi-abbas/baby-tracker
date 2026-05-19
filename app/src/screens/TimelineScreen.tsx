@@ -190,7 +190,7 @@ export function TimelineScreen() {
                   <div style={{ width: 14, height: 14, borderRadius: 7, background: cfg.color, border: `3px solid ${T.cream}`, boxShadow: isLive ? `0 0 0 3px ${cfg.soft}` : 'none' }} />
                 </div>
                 <div style={{ flex: 1, paddingBottom: 4 }}>
-                  <Card pad={12} style={{ overflow: 'hidden' }}>
+                  <Card pad={12} style={{ overflow: 'hidden' }} onClick={canEdit ? () => setExpandedId(isExpanded ? null : e.id) : undefined}>
                     {/* Main row */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ width: 32, height: 32, borderRadius: 9, background: cfg.soft, color: cfg.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -202,20 +202,14 @@ export function TimelineScreen() {
                       </div>
                       {isLive && <Chip color={T.terracotta} soft={T.terracottaSoft}>● live</Chip>}
                       {canEdit && (
-                        <button onClick={() => setExpandedId(isExpanded ? null : e.id)} style={{
-                          width: 28, height: 28, borderRadius: 8, border: 'none', background: isExpanded ? T.rule : 'transparent',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
-                          color: T.inkMute, transition: 'background 0.15s',
-                        }}>
-                          <div style={{ width: 14, height: 14 }}>{I.chev}</div>
-                        </button>
+                        <div style={{ width: 14, height: 14, color: T.inkMute, flexShrink: 0, transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>{I.chev}</div>
                       )}
                     </div>
 
                     {/* Action row — shown when expanded */}
                     {isExpanded && (
                       <div style={{ display: 'flex', gap: 8, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.rule}` }}>
-                        <button onClick={() => handleEdit(e)} style={{
+                        <button onClick={(ev) => { ev.stopPropagation(); handleEdit(e); }} style={{
                           flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                           padding: '8px 0', borderRadius: 10, border: `1.5px solid ${T.terracotta}`,
                           background: T.terracottaSoft, color: T.terracotta,
@@ -225,7 +219,7 @@ export function TimelineScreen() {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(e)}
+                          onClick={(ev) => { ev.stopPropagation(); handleDelete(e); }}
                           disabled={deletingId === e.id}
                           style={{
                             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
