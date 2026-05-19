@@ -185,6 +185,13 @@ app.delete("/api/babies/:babyId/caregivers/:id", async (c) => {
 
 // ─── Feedings ─────────────────────────────────────────────────────
 
+app.get("/api/babies/:babyId/feedings/:id", async (c) => {
+  const db = getDb(c.env.DATABASE_URL);
+  const [row] = await db.select().from(feedings).where(and(eq(feedings.id, c.req.param("id")), eq(feedings.babyId, c.req.param("babyId"))));
+  if (!row) return c.json({ error: "not found" }, 404);
+  return c.json(row);
+});
+
 app.get("/api/babies/:babyId/feedings", async (c) => {
   const db = getDb(c.env.DATABASE_URL);
   const limit = Number(c.req.query("limit") ?? 50);
@@ -229,6 +236,13 @@ app.delete("/api/babies/:babyId/feedings/:id", async (c) => {
 
 // ─── Sleeps ────────────────────────────────────────────────────────
 
+app.get("/api/babies/:babyId/sleeps/:id", async (c) => {
+  const db = getDb(c.env.DATABASE_URL);
+  const [row] = await db.select().from(sleeps).where(and(eq(sleeps.id, c.req.param("id")), eq(sleeps.babyId, c.req.param("babyId"))));
+  if (!row) return c.json({ error: "not found" }, 404);
+  return c.json(row);
+});
+
 app.get("/api/babies/:babyId/sleeps", async (c) => {
   const db = getDb(c.env.DATABASE_URL);
   const rows = await db
@@ -271,6 +285,13 @@ app.delete("/api/babies/:babyId/sleeps/:id", async (c) => {
 });
 
 // ─── Pumping ───────────────────────────────────────────────────────
+
+app.get("/api/babies/:babyId/pumping/:id", async (c) => {
+  const db = getDb(c.env.DATABASE_URL);
+  const [row] = await db.select().from(pumpingSessions).where(and(eq(pumpingSessions.id, c.req.param("id")), eq(pumpingSessions.babyId, c.req.param("babyId"))));
+  if (!row) return c.json({ error: "not found" }, 404);
+  return c.json(row);
+});
 
 app.get("/api/babies/:babyId/pumping", async (c) => {
   const db = getDb(c.env.DATABASE_URL);
@@ -344,6 +365,13 @@ app.delete("/api/babies/:babyId/pumping/:id", async (c) => {
 
 // ─── Diapers ───────────────────────────────────────────────────────
 
+app.get("/api/babies/:babyId/diapers/:id", async (c) => {
+  const db = getDb(c.env.DATABASE_URL);
+  const [row] = await db.select().from(diaperChanges).where(and(eq(diaperChanges.id, c.req.param("id")), eq(diaperChanges.babyId, c.req.param("babyId"))));
+  if (!row) return c.json({ error: "not found" }, 404);
+  return c.json(row);
+});
+
 app.get("/api/babies/:babyId/diapers", async (c) => {
   const db = getDb(c.env.DATABASE_URL);
   const rows = await db
@@ -391,6 +419,13 @@ app.delete("/api/babies/:babyId/diapers/:id", async (c) => {
 
 // ─── Baths ─────────────────────────────────────────────────────────
 
+app.get("/api/babies/:babyId/baths/:id", async (c) => {
+  const db = getDb(c.env.DATABASE_URL);
+  const [row] = await db.select().from(baths).where(and(eq(baths.id, c.req.param("id")), eq(baths.babyId, c.req.param("babyId"))));
+  if (!row) return c.json({ error: "not found" }, 404);
+  return c.json(row);
+});
+
 app.get("/api/babies/:babyId/baths", async (c) => {
   const db = getDb(c.env.DATABASE_URL);
   const rows = await db
@@ -433,6 +468,13 @@ app.delete("/api/babies/:babyId/baths/:id", async (c) => {
 });
 
 // ─── Growth ─────────────────────────────────────────────────────────
+
+app.get("/api/babies/:babyId/growth/:id", async (c) => {
+  const db = getDb(c.env.DATABASE_URL);
+  const [row] = await db.select().from(growthEntries).where(and(eq(growthEntries.id, c.req.param("id")), eq(growthEntries.babyId, c.req.param("babyId"))));
+  if (!row) return c.json({ error: "not found" }, 404);
+  return c.json(row);
+});
 
 app.get("/api/babies/:babyId/growth", async (c) => {
   const db = getDb(c.env.DATABASE_URL);

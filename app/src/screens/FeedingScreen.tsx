@@ -6,6 +6,8 @@ import {
 } from '../components/ui';
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
+import { useEditRecord } from '../hooks/useEditRecord';
+import type { Feeding } from '../types';
 
 type FeedMode = 'Breast' | 'Bottle' | 'Formula' | 'Solids';
 type Side = 'left' | 'right' | 'both';
@@ -18,6 +20,7 @@ function toLocalDT(d: Date) {
 export function FeedingScreen() {
   const { babyApi: api } = useBaby();
   const { back } = useNav();
+  const { editId, record: editRecord } = useEditRecord<Feeding>(id => api.feedings.get(id) as Promise<Feeding>);
   const [feedMode, setFeedMode] = useState<FeedMode>('Breast');
   const [entryMode, setEntryMode] = useState<'live' | 'manual'>('live');
 
@@ -57,6 +60,19 @@ export function FeedingScreen() {
     }
   }, [entryMode]);
 
+  // Pre-fill when editing an existing record
+  useEffect(() => {
+    if (!editRecord) return;
+    const typeCap = (editRecord.type.charAt(0).toUpperCase() + editRecord.type.slice(1)) as FeedMode;
+    setFeedMode(['Breast','Bottle','Formula','Solids'].includes(typeCap) ? typeCap : 'Breast');
+    setEntryMode('manual');
+    setManualStart(toLocalDT(new Date(editRecord.startedAt)));
+    setManualEnd(editRecord.endedAt ? toLocalDT(new Date(editRecord.endedAt)) : toLocalDT(new Date(editRecord.startedAt)));
+    if (editRecord.side) setManualSide(editRecord.side as Side);
+    if (editRecord.amountMl) setManualAmountMl(editRecord.amountMl);
+    if (editRecord.notes) setNotes(editRecord.notes);
+  }, [editRecord]);
+
   async function save() {
     setSaving(true);
     let payload: Record<string, unknown>;
@@ -83,7 +99,12 @@ export function FeedingScreen() {
         endedAt: feedMode !== 'Bottle' && feedMode !== 'Formula' ? end.toISOString() : null,
       };
     }
-    await (api.feedings.create({ ...payload, notes: notes || null, loggedBy: 'You' }) as Promise<unknown>).catch(() => {});
+    const full = { ...payload, notes: notes || null, loggedBy: 'You' };
+    if (editId) {
+      await (api.feedings.update(editId, full) as Promise<unknown>).catch(() => {});
+    } else {
+      await (api.feedings.create(full) as Promise<unknown>).catch(() => {});
+    }
     setSaving(false);
     back();
   }
@@ -97,7 +118,7 @@ export function FeedingScreen() {
     <div style={{ width: '100%', minHeight: '100%', background: T.cream, fontFamily: fonts.sans, display: 'flex', flexDirection: 'column', paddingTop: 'max(20px, env(safe-area-inset-top))', boxSizing: 'border-box' }}>
       <div style={{ padding: '6px 20px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
         <BackBtn />
-        <div style={{ flex: 1, textAlign: 'center', fontSize: 13, fontWeight: 700, color: T.ink, letterSpacing: 0.4, textTransform: 'uppercase' }}>Feeding</div>
+        <div style={{ flex: 1, textAlign: 'center', fontSize: 13, fontWeight: 700, color: T.ink, letterSpacing: 0.4, textTransform: 'uppercase' }}>{editId ? 'Edit Feeding' : 'Feeding'}</div>
         <button style={iconBtnStyle}><div style={{ width: 18, height: 18, color: T.ink }}>{I.doc}</div></button>
       </div>
 
@@ -243,7 +264,7 @@ export function FeedingScreen() {
           </>
         ) : (
           <button onClick={save} disabled={saving || !manualStart} style={{ ...primaryBtnStyle, flex: 1, fontSize: 15 }}>
-            {saving ? 'Saving…' : 'Save feed'}
+            {saving ? 'Saving…' : editId ? 'Update feed' : 'Save feed'}
           </button>
         )}
       </div>
