@@ -13,6 +13,7 @@ export function createAuth(
   baseURL: string,
   googleClientId: string,
   googleClientSecret: string,
+  frontendUrl: string,
 ) {
   const db = drizzle(neon(databaseUrl), { schema: fullSchema });
   return betterAuth({
@@ -26,6 +27,6 @@ export function createAuth(
     },
     secret,
     baseURL,
-    trustedOrigins: ["http://localhost:5173", baseURL.replace("-api", "")],
+    trustedOrigins: ["http://localhost:5173", frontendUrl],
   });
 }

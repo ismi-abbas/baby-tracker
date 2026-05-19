@@ -24,6 +24,7 @@ type Env = {
   DATABASE_URL: string;
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_URL: string;
+  FRONTEND_URL: string;
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
 };
@@ -71,6 +72,7 @@ app.on(["GET", "POST"], "/api/auth/**", async (c) => {
     c.env.BETTER_AUTH_URL,
     c.env.GOOGLE_CLIENT_ID,
     c.env.GOOGLE_CLIENT_SECRET,
+    c.env.FRONTEND_URL,
   );
   return auth.handler(c.req.raw);
 });
@@ -84,6 +86,7 @@ app.use("/api/babies/*", async (c, next) => {
     c.env.BETTER_AUTH_URL,
     c.env.GOOGLE_CLIENT_ID,
     c.env.GOOGLE_CLIENT_SECRET,
+    c.env.FRONTEND_URL,
   );
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
   if (!session) return c.json({ error: "unauthorized" }, 401);
@@ -98,6 +101,7 @@ app.use("/api/seed", async (c, next) => {
     c.env.BETTER_AUTH_URL,
     c.env.GOOGLE_CLIENT_ID,
     c.env.GOOGLE_CLIENT_SECRET,
+    c.env.FRONTEND_URL,
   );
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
   if (!session) return c.json({ error: "unauthorized" }, 401);

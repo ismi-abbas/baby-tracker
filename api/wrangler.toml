@@ -5,6 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 BETTER_AUTH_URL = "https://baby-tracker-api.abbaspuzi-dev.workers.dev"
+FRONTEND_URL = "https://baby-tracker-5j9.pages.dev"
 
 # Secrets (set via wrangler secret put):
 #   DATABASE_URL
