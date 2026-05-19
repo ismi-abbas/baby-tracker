@@ -20,7 +20,6 @@ import { PumpingScreen } from './screens/PumpingScreen';
 import { DiaperScreen } from './screens/DiaperScreen';
 import { BathScreen } from './screens/BathScreen';
 import { GrowthEntryScreen } from './screens/GrowthEntryScreen';
-import { T } from './tokens';
 
 // ─── Inner layout — rendered inside BabyProvider ─────────────────
 
@@ -43,19 +42,17 @@ function AppLayout() {
 
   if (babyLoading) {
     return (
-      <div className="nb-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.cream }}>
-        <div style={{ fontSize: 32 }}>👶</div>
+      <div className="relative h-full w-full overflow-hidden bg-cream flex items-center justify-center">
+        <div className="text-[32px]">👶</div>
       </div>
     );
   }
 
-  const animClass = 'nb-screen-in';
-
   return (
     <NavCtx.Provider value={{ openSheet: () => setSheetOpen(true) }}>
-      <div className="nb-shell">
-        <div className="nb-scroll" key={location.pathname}>
-          <div className={animClass} style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', flex: 1 }}>
+      <div className="relative h-full w-full overflow-hidden bg-cream">
+        <div className="absolute inset-0 flex flex-col overflow-y-auto overflow-x-hidden [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" key={location.pathname}>
+          <div className="flex min-h-full flex-1 flex-col animate-nb-screen-in">
             <Outlet />
           </div>
         </div>
@@ -72,16 +69,16 @@ function RootLayout() {
 
   if (isPending) {
     return (
-      <div className="nb-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.cream }}>
-        <div style={{ fontSize: 32 }}>👶</div>
+      <div className="relative h-full w-full overflow-hidden bg-cream flex items-center justify-center">
+        <div className="text-[32px]">👶</div>
       </div>
     );
   }
 
   if (!session) {
     return (
-      <div className="nb-shell">
-        <div className="nb-scroll">
+      <div className="relative h-full w-full overflow-hidden bg-cream">
+        <div className="absolute inset-0 flex flex-col overflow-y-auto overflow-x-hidden [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <LoginScreen />
         </div>
       </div>

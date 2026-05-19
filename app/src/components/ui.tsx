@@ -3,6 +3,7 @@ import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { useBaby } from '../context/BabyContext';
 import { T, fonts } from '../tokens';
 import { I } from './Icons';
+import { Calendar } from './calendar';
 import type { Screen } from '../types';
 
 // ─── Route map ───────────────────────────────────────────────────
@@ -208,7 +209,7 @@ export function TabBar({ active }: { active?: Screen }) {
       background: `linear-gradient(180deg, rgba(244,236,221,0) 0%, rgba(244,236,221,0.95) 40%, ${T.cream} 100%)`,
       zIndex: 30,
     }}>
-      <div style={{
+      <div className="animate-nb-slide" style={{
         display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
         alignItems: 'end', padding: '0 8px',
       }}>
@@ -275,16 +276,82 @@ export function DateTimeField({
   label: string; value: string; onChange: (v: string) => void;
   type?: 'datetime-local' | 'date' | 'time'; max?: string;
 }) {
+  const [open, setOpen] = useState(false);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const toYmd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const displayDate = (d: Date) => d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+
+  if (type === 'time') {
+    return (
+      <div>
+        {label && <div className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.5px] text-ink-mute">{label}</div>}
+        <input
+          type="time"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          max={max}
+          className="box-border w-full rounded-xl border-[1.5px] border-rule bg-card px-3.5 py-3 text-sm text-ink outline-none [color-scheme:light]"
+        />
+      </div>
+    );
+  }
+
+  const datePart = value.split('T')[0] || '';
+  const timePart = value.includes('T') ? value.split('T')[1] : '12:00';
+  const selected = datePart ? new Date(`${datePart}T12:00:00`) : undefined;
+  const maxDate = max ? new Date(`${max.split('T')[0]}T23:59:59`) : undefined;
+  const display = selected
+    ? type === 'date'
+      ? displayDate(selected)
+      : `${displayDate(selected)} · ${timePart}`
+    : 'Select date';
+
+  function selectDate(day?: Date) {
+    if (!day) return;
+    const nextDate = toYmd(day);
+    onChange(type === 'date' ? nextDate : `${nextDate}T${timePart}`);
+    if (type === 'date') setOpen(false);
+  }
+
+  function selectTime(nextTime: string) {
+    onChange(`${datePart || toYmd(new Date())}T${nextTime}`);
+  }
+
   return (
-    <div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: T.inkMute, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6 }}>{label}</div>
-      <input type={type} value={value} onChange={e => onChange(e.target.value)} max={max}
-        style={{
-          width: '100%', padding: '12px 14px', borderRadius: 12,
-          border: `1.5px solid ${T.rule}`, background: T.card,
-          fontFamily: fonts.sans, fontSize: 14, color: T.ink,
-          outline: 'none', boxSizing: 'border-box', colorScheme: 'light',
-        }} />
+    <div className="relative">
+      {label && <div className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.5px] text-ink-mute">{label}</div>}
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="box-border flex w-full items-center justify-between rounded-xl border-[1.5px] border-rule bg-card px-3.5 py-3 text-left text-sm text-ink outline-none [color-scheme:light]"
+      >
+        <span>{display}</span>
+        <span className="text-ink-mute">▾</span>
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 rounded-[18px] border border-rule bg-card shadow-card-lg">
+          <Calendar
+            mode="single"
+            selected={selected}
+            onSelect={selectDate}
+            disabled={maxDate ? { after: maxDate } : undefined}
+          />
+          {type === 'datetime-local' && (
+            <div className="flex items-center gap-3 border-t border-rule px-3.5 py-3">
+              <div className="text-[11px] font-bold uppercase tracking-[0.5px] text-ink-mute">Time</div>
+              <input
+                type="time"
+                value={timePart}
+                onChange={e => selectTime(e.target.value)}
+                className="min-w-0 flex-1 rounded-xl border-[1.5px] border-rule bg-card px-3 py-2 text-sm text-ink outline-none [color-scheme:light]"
+              />
+              <button type="button" onClick={() => setOpen(false)} className="rounded-xl bg-terracotta px-3 py-2 text-[12.5px] font-bold text-card">
+                Done
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -370,14 +437,13 @@ export function QuickLogSheet({ onClose }: { onClose: () => void }) {
     { id: 'growth-entry', label: 'Growth', color: T.rose, soft: T.roseSoft, icon: I.measure },
   ];
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 100, fontFamily: fonts.sans, animation: 'nb-fade 180ms ease' }}>
+    <div className="fixed inset-0 z-[100] font-sans animate-nb-fade">
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(42,33,26,0.45)', backdropFilter: 'blur(4px)' }} />
       <div style={{
         position: 'absolute', left: 0, right: 0, bottom: 0,
         background: T.parchment, borderTopLeftRadius: 32, borderTopRightRadius: 32,
         padding: '14px 18px max(36px, env(safe-area-inset-bottom))',
         boxShadow: '0 -10px 40px rgba(0,0,0,0.18)',
-        animation: 'nb-slide 220ms cubic-bezier(.2,.7,.3,1)',
       }}>
         <div style={{ width: 40, height: 4, borderRadius: 4, background: T.rule, margin: '0 auto 14px' }} />
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4 }}>
