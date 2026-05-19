@@ -7,6 +7,9 @@ import * as authSchema from "./db/auth-schema";
 
 const fullSchema = { ...appSchema, ...authSchema };
 
+// baseURL must be derived from the incoming request (protocol + host),
+// not from a static env var — better-auth rejects requests when the
+// configured baseURL host doesn't match the actual request host.
 export function createAuth(
   databaseUrl: string,
   secret: string,

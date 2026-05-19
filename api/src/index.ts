@@ -64,12 +64,18 @@ function todayStart(): string {
 }
 
 // ─── Auth routes ──────────────────────────────────────────────────
+// Use global middleware with manual path check — Hono wildcard paths
+// behave inconsistently in CF Workers for deeply nested routes.
 
-app.on(["GET", "POST"], "/api/auth/**", async (c) => {
+app.use("*", async (c, next) => {
+  if (!c.req.path.startsWith("/api/auth/")) return next();
+  // Derive baseURL from the actual incoming request to avoid mismatches
+  const { protocol, host } = new URL(c.req.raw.url);
+  const baseURL = `${protocol}//${host}`;
   const auth = createAuth(
     c.env.DATABASE_URL,
     c.env.BETTER_AUTH_SECRET,
-    c.env.BETTER_AUTH_URL,
+    baseURL,
     c.env.GOOGLE_CLIENT_ID,
     c.env.GOOGLE_CLIENT_SECRET,
     c.env.FRONTEND_URL,
@@ -80,10 +86,11 @@ app.on(["GET", "POST"], "/api/auth/**", async (c) => {
 // ─── Auth middleware (protects all /api/babies/* routes) ──────────
 
 app.use("/api/babies/*", async (c, next) => {
+  const { protocol, host } = new URL(c.req.raw.url);
   const auth = createAuth(
     c.env.DATABASE_URL,
     c.env.BETTER_AUTH_SECRET,
-    c.env.BETTER_AUTH_URL,
+    `${protocol}//${host}`,
     c.env.GOOGLE_CLIENT_ID,
     c.env.GOOGLE_CLIENT_SECRET,
     c.env.FRONTEND_URL,
@@ -95,10 +102,11 @@ app.use("/api/babies/*", async (c, next) => {
 });
 
 app.use("/api/seed", async (c, next) => {
+  const { protocol, host } = new URL(c.req.raw.url);
   const auth = createAuth(
     c.env.DATABASE_URL,
     c.env.BETTER_AUTH_SECRET,
-    c.env.BETTER_AUTH_URL,
+    `${protocol}//${host}`,
     c.env.GOOGLE_CLIENT_ID,
     c.env.GOOGLE_CLIENT_SECRET,
     c.env.FRONTEND_URL,
