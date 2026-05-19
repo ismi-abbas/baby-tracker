@@ -1,0 +1,7 @@
+"$schema" = "./node_modules/wrangler/config-schema.json"
+name = "baby-tracker"
+# Set this to today's date
+compatibility_date = "2026-05-18"
+
+[assets]
+not_found_handling = "single-page-application"
