@@ -1,15 +1,16 @@
 name = "baby-tracker-api"
 main = "src/index.ts"
-compatibility_date = "2025-05-18"
+compatibility_date = "2025-05-19"
 compatibility_flags = ["nodejs_compat"]
-
-[[d1_databases]]
-binding = "DB"
-database_name = "baby-tracker"
-database_id = "b8407f98-e29f-4a28-9a0d-57f10525fb92"
 
 [vars]
 BETTER_AUTH_URL = "https://baby-tracker-api.abbaspuzi-dev.workers.dev"
+
+# Secrets (set via wrangler secret put):
+#   DATABASE_URL
+#   BETTER_AUTH_SECRET
+#   GOOGLE_CLIENT_ID
+#   GOOGLE_CLIENT_SECRET
 
 [dev]
 port = 8787

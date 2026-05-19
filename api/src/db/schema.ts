@@ -1,6 +1,6 @@
-import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, real, boolean } from "drizzle-orm/pg-core";
 
-export const babies = sqliteTable("babies", {
+export const babies = pgTable("babies", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   birthDate: text("birth_date").notNull(),
@@ -11,7 +11,7 @@ export const babies = sqliteTable("babies", {
   createdAt: text("created_at").notNull(),
 });
 
-export const caregivers = sqliteTable("caregivers", {
+export const caregivers = pgTable("caregivers", {
   id: text("id").primaryKey(),
   babyId: text("baby_id")
     .notNull()
@@ -23,13 +23,13 @@ export const caregivers = sqliteTable("caregivers", {
   createdAt: text("created_at").notNull(),
 });
 
-export const feedings = sqliteTable("feedings", {
+export const feedings = pgTable("feedings", {
   id: text("id").primaryKey(),
   babyId: text("baby_id")
     .notNull()
     .references(() => babies.id),
-  type: text("type").notNull(), // breast | bottle | formula | solids
-  side: text("side"), // left | right | both
+  type: text("type").notNull(),
+  side: text("side"),
   durationSeconds: integer("duration_seconds"),
   amountMl: integer("amount_ml"),
   notes: text("notes"),
@@ -39,7 +39,7 @@ export const feedings = sqliteTable("feedings", {
   createdAt: text("created_at").notNull(),
 });
 
-export const sleeps = sqliteTable("sleeps", {
+export const sleeps = pgTable("sleeps", {
   id: text("id").primaryKey(),
   babyId: text("baby_id")
     .notNull()
@@ -53,7 +53,7 @@ export const sleeps = sqliteTable("sleeps", {
   createdAt: text("created_at").notNull(),
 });
 
-export const pumpingSessions = sqliteTable("pumping_sessions", {
+export const pumpingSessions = pgTable("pumping_sessions", {
   id: text("id").primaryKey(),
   babyId: text("baby_id")
     .notNull()
@@ -62,7 +62,7 @@ export const pumpingSessions = sqliteTable("pumping_sessions", {
   rightMl: integer("right_ml"),
   totalMl: integer("total_ml"),
   durationSeconds: integer("duration_seconds"),
-  storageType: text("storage_type"), // fridge | freezer | feed_now
+  storageType: text("storage_type"),
   pumpBrand: text("pump_brand"),
   notes: text("notes"),
   startedAt: text("started_at").notNull(),
@@ -71,12 +71,12 @@ export const pumpingSessions = sqliteTable("pumping_sessions", {
   createdAt: text("created_at").notNull(),
 });
 
-export const diaperChanges = sqliteTable("diaper_changes", {
+export const diaperChanges = pgTable("diaper_changes", {
   id: text("id").primaryKey(),
   babyId: text("baby_id")
     .notNull()
     .references(() => babies.id),
-  type: text("type").notNull(), // wet | dirty | mixed
+  type: text("type").notNull(),
   consistency: text("consistency"),
   color: text("color"),
   notes: text("notes"),
@@ -85,15 +85,15 @@ export const diaperChanges = sqliteTable("diaper_changes", {
   createdAt: text("created_at").notNull(),
 });
 
-export const baths = sqliteTable("baths", {
+export const baths = pgTable("baths", {
   id: text("id").primaryKey(),
   babyId: text("baby_id")
     .notNull()
     .references(() => babies.id),
-  type: text("type"), // tub | sponge | shower
+  type: text("type"),
   waterTempC: real("water_temp_c"),
   durationMinutes: integer("duration_minutes"),
-  soapUsed: integer("soap_used", { mode: "boolean" }),
+  soapUsed: boolean("soap_used"),
   soapType: text("soap_type"),
   notes: text("notes"),
   loggedBy: text("logged_by"),
@@ -101,22 +101,22 @@ export const baths = sqliteTable("baths", {
   createdAt: text("created_at").notNull(),
 });
 
-export const growthEntries = sqliteTable("growth_entries", {
+export const growthEntries = pgTable("growth_entries", {
   id: text("id").primaryKey(),
   babyId: text("baby_id")
     .notNull()
     .references(() => babies.id),
-  weightG: integer("weight_g"), // grams
+  weightG: integer("weight_g"),
   lengthCm: real("length_cm"),
   headCm: real("head_cm"),
-  visitType: text("visit_type"), // home | doctor
+  visitType: text("visit_type"),
   notes: text("notes"),
   loggedBy: text("logged_by"),
   measuredAt: text("measured_at").notNull(),
   createdAt: text("created_at").notNull(),
 });
 
-export const doctorVisits = sqliteTable("doctor_visits", {
+export const doctorVisits = pgTable("doctor_visits", {
   id: text("id").primaryKey(),
   babyId: text("baby_id")
     .notNull()
@@ -125,7 +125,7 @@ export const doctorVisits = sqliteTable("doctor_visits", {
   hospital: text("hospital"),
   visitType: text("visit_type"),
   notes: text("notes"),
-  vaccines: text("vaccines"), // JSON array string
+  vaccines: text("vaccines"),
   nextAppointment: text("next_appointment"),
   visitedAt: text("visited_at").notNull(),
   createdAt: text("created_at").notNull(),

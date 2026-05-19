@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { drizzle } from "drizzle-orm/d1";
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
 import { eq, desc, gte, and, sql } from "drizzle-orm";
 import * as appSchema from "./db/schema";
 import * as authSchema from "./db/auth-schema";
@@ -20,12 +21,16 @@ import { createAuth } from "./auth";
 const fullSchema = { ...appSchema, ...authSchema };
 
 type Env = {
-  DB: D1Database;
+  DATABASE_URL: string;
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_URL: string;
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
 };
+
+function getDb(databaseUrl: string) {
+  return drizzle(neon(databaseUrl), { schema: fullSchema });
+}
 
 type Variables = {
   userId: string;
@@ -61,7 +66,7 @@ function todayStart(): string {
 
 app.on(["GET", "POST"], "/api/auth/**", async (c) => {
   const auth = createAuth(
-    c.env.DB,
+    c.env.DATABASE_URL,
     c.env.BETTER_AUTH_SECRET,
     c.env.BETTER_AUTH_URL,
     c.env.GOOGLE_CLIENT_ID,
@@ -74,7 +79,7 @@ app.on(["GET", "POST"], "/api/auth/**", async (c) => {
 
 app.use("/api/babies/*", async (c, next) => {
   const auth = createAuth(
-    c.env.DB,
+    c.env.DATABASE_URL,
     c.env.BETTER_AUTH_SECRET,
     c.env.BETTER_AUTH_URL,
     c.env.GOOGLE_CLIENT_ID,
@@ -88,7 +93,7 @@ app.use("/api/babies/*", async (c, next) => {
 
 app.use("/api/seed", async (c, next) => {
   const auth = createAuth(
-    c.env.DB,
+    c.env.DATABASE_URL,
     c.env.BETTER_AUTH_SECRET,
     c.env.BETTER_AUTH_URL,
     c.env.GOOGLE_CLIENT_ID,
@@ -102,13 +107,13 @@ app.use("/api/seed", async (c, next) => {
 // ─── Babies ──────────────────────────────────────────────────────
 
 app.get("/api/babies", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const rows = await db.select().from(babies).orderBy(desc(babies.createdAt));
   return c.json(rows);
 });
 
 app.get("/api/babies/:id", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const [row] = await db
     .select()
     .from(babies)
@@ -118,7 +123,7 @@ app.get("/api/babies/:id", async (c) => {
 });
 
 app.post("/api/babies", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const body = await c.req.json();
   const row = { id: uid(), ...body, createdAt: now() };
   await db.insert(babies).values(row);
@@ -126,7 +131,7 @@ app.post("/api/babies", async (c) => {
 });
 
 app.put("/api/babies/:id", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const body = await c.req.json();
   await db
     .update(babies)
@@ -142,7 +147,7 @@ app.put("/api/babies/:id", async (c) => {
 // ─── Caregivers ───────────────────────────────────────────────────
 
 app.get("/api/babies/:babyId/caregivers", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const rows = await db
     .select()
     .from(caregivers)
@@ -151,7 +156,7 @@ app.get("/api/babies/:babyId/caregivers", async (c) => {
 });
 
 app.post("/api/babies/:babyId/caregivers", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const body = await c.req.json();
   const row = { id: uid(), babyId: c.req.param("babyId"), ...body, createdAt: now() };
   await db.insert(caregivers).values(row);
@@ -159,7 +164,7 @@ app.post("/api/babies/:babyId/caregivers", async (c) => {
 });
 
 app.delete("/api/babies/:babyId/caregivers/:id", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   await db
     .delete(caregivers)
     .where(and(eq(caregivers.id, c.req.param("id")), eq(caregivers.babyId, c.req.param("babyId"))));
@@ -169,7 +174,7 @@ app.delete("/api/babies/:babyId/caregivers/:id", async (c) => {
 // ─── Feedings ─────────────────────────────────────────────────────
 
 app.get("/api/babies/:babyId/feedings", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const limit = Number(c.req.query("limit") ?? 50);
   const rows = await db
     .select()
@@ -181,7 +186,7 @@ app.get("/api/babies/:babyId/feedings", async (c) => {
 });
 
 app.post("/api/babies/:babyId/feedings", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const body = await c.req.json();
   const row = { id: uid(), babyId: c.req.param("babyId"), ...body, createdAt: now() };
   await db.insert(feedings).values(row);
@@ -189,7 +194,7 @@ app.post("/api/babies/:babyId/feedings", async (c) => {
 });
 
 app.put("/api/babies/:babyId/feedings/:id", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const body = await c.req.json();
   await db
     .update(feedings)
@@ -203,7 +208,7 @@ app.put("/api/babies/:babyId/feedings/:id", async (c) => {
 });
 
 app.delete("/api/babies/:babyId/feedings/:id", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   await db
     .delete(feedings)
     .where(and(eq(feedings.id, c.req.param("id")), eq(feedings.babyId, c.req.param("babyId"))));
@@ -213,7 +218,7 @@ app.delete("/api/babies/:babyId/feedings/:id", async (c) => {
 // ─── Sleeps ────────────────────────────────────────────────────────
 
 app.get("/api/babies/:babyId/sleeps", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const rows = await db
     .select()
     .from(sleeps)
@@ -224,7 +229,7 @@ app.get("/api/babies/:babyId/sleeps", async (c) => {
 });
 
 app.post("/api/babies/:babyId/sleeps", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const body = await c.req.json();
   const row = { id: uid(), babyId: c.req.param("babyId"), ...body, createdAt: now() };
   await db.insert(sleeps).values(row);
@@ -232,7 +237,7 @@ app.post("/api/babies/:babyId/sleeps", async (c) => {
 });
 
 app.put("/api/babies/:babyId/sleeps/:id", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const body = await c.req.json();
   await db
     .update(sleeps)
@@ -246,7 +251,7 @@ app.put("/api/babies/:babyId/sleeps/:id", async (c) => {
 });
 
 app.delete("/api/babies/:babyId/sleeps/:id", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   await db
     .delete(sleeps)
     .where(and(eq(sleeps.id, c.req.param("id")), eq(sleeps.babyId, c.req.param("babyId"))));
@@ -256,7 +261,7 @@ app.delete("/api/babies/:babyId/sleeps/:id", async (c) => {
 // ─── Pumping ───────────────────────────────────────────────────────
 
 app.get("/api/babies/:babyId/pumping", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const rows = await db
     .select()
     .from(pumpingSessions)
@@ -267,7 +272,7 @@ app.get("/api/babies/:babyId/pumping", async (c) => {
 });
 
 app.post("/api/babies/:babyId/pumping", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const body = await c.req.json();
   const left = body.leftMl ?? 0;
   const right = body.rightMl ?? 0;
@@ -285,7 +290,7 @@ app.post("/api/babies/:babyId/pumping", async (c) => {
 });
 
 app.put("/api/babies/:babyId/pumping/:id", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const body = await c.req.json();
   if (body.leftMl !== undefined || body.rightMl !== undefined) {
     const [existing] = await db
@@ -313,7 +318,7 @@ app.put("/api/babies/:babyId/pumping/:id", async (c) => {
 });
 
 app.delete("/api/babies/:babyId/pumping/:id", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   await db
     .delete(pumpingSessions)
     .where(
@@ -328,7 +333,7 @@ app.delete("/api/babies/:babyId/pumping/:id", async (c) => {
 // ─── Diapers ───────────────────────────────────────────────────────
 
 app.get("/api/babies/:babyId/diapers", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const rows = await db
     .select()
     .from(diaperChanges)
@@ -339,7 +344,7 @@ app.get("/api/babies/:babyId/diapers", async (c) => {
 });
 
 app.post("/api/babies/:babyId/diapers", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const body = await c.req.json();
   const row = { id: uid(), babyId: c.req.param("babyId"), ...body, createdAt: now() };
   await db.insert(diaperChanges).values(row);
@@ -347,7 +352,7 @@ app.post("/api/babies/:babyId/diapers", async (c) => {
 });
 
 app.put("/api/babies/:babyId/diapers/:id", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const body = await c.req.json();
   await db
     .update(diaperChanges)
@@ -363,7 +368,7 @@ app.put("/api/babies/:babyId/diapers/:id", async (c) => {
 });
 
 app.delete("/api/babies/:babyId/diapers/:id", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   await db
     .delete(diaperChanges)
     .where(
@@ -375,7 +380,7 @@ app.delete("/api/babies/:babyId/diapers/:id", async (c) => {
 // ─── Baths ─────────────────────────────────────────────────────────
 
 app.get("/api/babies/:babyId/baths", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const rows = await db
     .select()
     .from(baths)
@@ -386,7 +391,7 @@ app.get("/api/babies/:babyId/baths", async (c) => {
 });
 
 app.post("/api/babies/:babyId/baths", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const body = await c.req.json();
   const row = { id: uid(), babyId: c.req.param("babyId"), ...body, createdAt: now() };
   await db.insert(baths).values(row);
@@ -394,7 +399,7 @@ app.post("/api/babies/:babyId/baths", async (c) => {
 });
 
 app.put("/api/babies/:babyId/baths/:id", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const body = await c.req.json();
   await db
     .update(baths)
@@ -408,7 +413,7 @@ app.put("/api/babies/:babyId/baths/:id", async (c) => {
 });
 
 app.delete("/api/babies/:babyId/baths/:id", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   await db
     .delete(baths)
     .where(and(eq(baths.id, c.req.param("id")), eq(baths.babyId, c.req.param("babyId"))));
@@ -418,7 +423,7 @@ app.delete("/api/babies/:babyId/baths/:id", async (c) => {
 // ─── Growth ─────────────────────────────────────────────────────────
 
 app.get("/api/babies/:babyId/growth", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const rows = await db
     .select()
     .from(growthEntries)
@@ -429,7 +434,7 @@ app.get("/api/babies/:babyId/growth", async (c) => {
 });
 
 app.post("/api/babies/:babyId/growth", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const body = await c.req.json();
   const row = { id: uid(), babyId: c.req.param("babyId"), ...body, createdAt: now() };
   await db.insert(growthEntries).values(row);
@@ -437,7 +442,7 @@ app.post("/api/babies/:babyId/growth", async (c) => {
 });
 
 app.put("/api/babies/:babyId/growth/:id", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const body = await c.req.json();
   await db
     .update(growthEntries)
@@ -453,7 +458,7 @@ app.put("/api/babies/:babyId/growth/:id", async (c) => {
 });
 
 app.delete("/api/babies/:babyId/growth/:id", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   await db
     .delete(growthEntries)
     .where(
@@ -465,7 +470,7 @@ app.delete("/api/babies/:babyId/growth/:id", async (c) => {
 // ─── Doctor Visits ─────────────────────────────────────────────────
 
 app.get("/api/babies/:babyId/visits", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const rows = await db
     .select()
     .from(doctorVisits)
@@ -475,7 +480,7 @@ app.get("/api/babies/:babyId/visits", async (c) => {
 });
 
 app.post("/api/babies/:babyId/visits", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const body = await c.req.json();
   const row = { id: uid(), babyId: c.req.param("babyId"), ...body, createdAt: now() };
   await db.insert(doctorVisits).values(row);
@@ -483,7 +488,7 @@ app.post("/api/babies/:babyId/visits", async (c) => {
 });
 
 app.put("/api/babies/:babyId/visits/:id", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const body = await c.req.json();
   await db
     .update(doctorVisits)
@@ -501,7 +506,7 @@ app.put("/api/babies/:babyId/visits/:id", async (c) => {
 // ─── Timeline ──────────────────────────────────────────────────────
 
 app.get("/api/babies/:babyId/timeline", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const babyId = c.req.param("babyId");
   const date = c.req.query("date") ?? new Date().toISOString().slice(0, 10);
   const dayStart = `${date}T00:00:00.000Z`;
@@ -579,7 +584,7 @@ app.get("/api/babies/:babyId/timeline", async (c) => {
 // ─── Today's Stats ──────────────────────────────────────────────────
 
 app.get("/api/babies/:babyId/stats/today", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const babyId = c.req.param("babyId");
   const start = todayStart();
 
@@ -628,7 +633,7 @@ app.get("/api/babies/:babyId/stats/today", async (c) => {
 // ─── Weekly Stats ───────────────────────────────────────────────────
 
 app.get("/api/babies/:babyId/stats/weekly", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const babyId = c.req.param("babyId");
   const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
 
@@ -667,7 +672,7 @@ app.get("/api/babies/:babyId/stats/weekly", async (c) => {
 // ─── Seed ──────────────────────────────────────────────────────────
 
 app.post("/api/seed", async (c) => {
-  const db = drizzle(c.env.DB, { schema: fullSchema });
+  const db = getDb(c.env.DATABASE_URL);
   const babyId = "saif-hakimi";
   const existing = await db.select().from(babies).where(eq(babies.id, babyId));
   if (existing.length > 0) return c.json({ ok: true, seeded: false });

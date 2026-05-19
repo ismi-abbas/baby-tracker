@@ -6,12 +6,13 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
-    "db:migrate:local": "wrangler d1 migrations apply baby-tracker --local",
-    "db:migrate:remote": "wrangler d1 migrations apply baby-tracker --remote",
+    "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
     "better-auth": "^1.2.7",
     "hono": "^4.12.19",
     "drizzle-orm": "^0.45.2"

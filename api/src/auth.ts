@@ -1,21 +1,22 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { drizzle } from "drizzle-orm/d1";
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
 import * as appSchema from "./db/schema";
 import * as authSchema from "./db/auth-schema";
 
 const fullSchema = { ...appSchema, ...authSchema };
 
 export function createAuth(
-  db: D1Database,
+  databaseUrl: string,
   secret: string,
   baseURL: string,
   googleClientId: string,
   googleClientSecret: string,
 ) {
-  const drizzleDb = drizzle(db, { schema: fullSchema });
+  const db = drizzle(neon(databaseUrl), { schema: fullSchema });
   return betterAuth({
-    database: drizzleAdapter(drizzleDb, { provider: "sqlite" }),
+    database: drizzleAdapter(db, { provider: "pg" }),
     emailAndPassword: { enabled: true },
     socialProviders: {
       google: {
