@@ -6,6 +6,7 @@ import { useBaby } from '../context/BabyContext';
 import { formatLength, formatWeight, useUnitPrefs } from '../units';
 import type { BabyMember, Caregiver, DoctorVisit, GrowthEntry } from '../types';
 import { cn } from '../lib/utils';
+import { signOut } from '../auth/client';
 
 function ageDisplay(birthDate: string) {
   const diff = Date.now() - new Date(birthDate).getTime();
@@ -103,10 +104,7 @@ export function ProfileScreen() {
       {/* Caregivers */}
       {caregivers.length > 0 && (
         <div className="px-4 pt-3.5">
-          <div className="flex items-center justify-between px-1.5 pb-2">
-            <div className="text-[11px] font-bold uppercase tracking-[0.6px] text-ink-mute">Caregivers</div>
-            <div className="cursor-pointer text-[11.5px] font-bold text-terracotta">+ Add</div>
-          </div>
+          <div className="px-1.5 pb-2 text-[11px] font-bold uppercase tracking-[0.6px] text-ink-mute">Caregivers</div>
           <Card pad={0}>
             {caregivers.map((p, i) => {
               const col = caregiverColors[p.id] ?? 'bg-sage';
@@ -177,14 +175,11 @@ export function ProfileScreen() {
               </div>
             )}
             {latestVisit.nextAppointment && (
-              <div className="mt-3 flex items-center justify-between rounded-xl bg-honey-soft px-3 py-2.5">
-                <div>
-                  <div className="text-xs font-bold text-[#7C5A21]">Next appointment</div>
-                  <div className="mt-px text-[11px] text-[#7C5A21] opacity-85">
-                    {new Date(latestVisit.nextAppointment).toLocaleDateString([], { month: 'long', day: 'numeric' })} · {latestVisit.doctorName}
-                  </div>
+              <div className="mt-3 rounded-xl bg-honey-soft px-3 py-2.5">
+                <div className="text-xs font-bold text-[#7C5A21]">Next appointment</div>
+                <div className="mt-px text-[11px] text-[#7C5A21] opacity-85">
+                  {new Date(latestVisit.nextAppointment).toLocaleDateString([], { month: 'long', day: 'numeric' })} · {latestVisit.doctorName}
                 </div>
-                <button className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border-0 bg-card/50 px-3 py-1.5 font-sans text-xs font-semibold tracking-[0.1px] text-[#7C5A21]">Remind</button>
               </div>
             )}
           </Card>
@@ -199,20 +194,33 @@ export function ProfileScreen() {
             { k: 'Milk', v: prefs.milkUnit, ic: I.feed, onClick: () => setPrefs(p => ({ ...p, milkUnit: p.milkUnit === 'ml' ? 'oz' : 'ml' })) },
             { k: 'Weight', v: prefs.weightUnit, ic: I.measure, onClick: () => setPrefs(p => ({ ...p, weightUnit: p.weightUnit === 'kg' ? 'lb' : 'kg' })) },
             { k: 'Length', v: prefs.lengthUnit, ic: I.measure, onClick: () => setPrefs(p => ({ ...p, lengthUnit: p.lengthUnit === 'cm' ? 'in' : 'cm' })) },
-            { k: 'Reminders', v: 'Feed · Pump · Vaccine', ic: I.bell },
-            { k: 'Night mode', v: 'Auto · 8 PM – 6 AM', ic: I.moon },
-            { k: 'Export data', v: 'CSV / PDF', ic: I.doc },
           ].map((r, i) => (
-            <div key={r.k} onClick={r.onClick} className={cn('flex items-center gap-3 px-3.5 py-3', i && 'border-t border-rule', r.onClick ? 'cursor-pointer' : 'cursor-default')}>
+            <div key={r.k} onClick={r.onClick} className={cn('flex cursor-pointer items-center gap-3 px-3.5 py-3', i && 'border-t border-rule')}>
               <div className="flex h-[30px] w-[30px] items-center justify-center rounded-lg bg-parchment text-ink-soft">
                 <div className="h-4 w-4">{r.ic}</div>
               </div>
               <div className="flex-1 text-[13.5px] font-semibold text-ink">{r.k}</div>
-              <div className={cn('text-xs text-ink-soft', r.onClick ? 'font-mono uppercase' : 'font-sans')}>{r.v}</div>
+              <div className="font-mono text-xs uppercase text-ink-soft">{r.v}</div>
               <div className="h-3 w-3 text-ink-mute">{I.chev}</div>
             </div>
           ))}
         </Card>
+      </div>
+
+      {/* Account */}
+      <div className="px-4 pt-3.5 pb-6">
+        <div className="px-1.5 pb-2 text-[11px] font-bold uppercase tracking-[0.6px] text-ink-mute">Account</div>
+        <button
+          onClick={() => signOut()}
+          className="flex w-full cursor-pointer items-center gap-3 rounded-[22px] border-0 bg-card px-3.5 py-3 shadow-card"
+        >
+          <div className="flex h-[30px] w-[30px] items-center justify-center rounded-lg bg-[#FEF2F2] text-[#E53E3E]">
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div className="flex-1 text-left text-[13.5px] font-semibold text-[#E53E3E]">Log out</div>
+        </button>
       </div>
 
       <TabBar />

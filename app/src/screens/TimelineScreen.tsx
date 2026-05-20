@@ -2,6 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { T } from '../tokens';
 import { Card, Chip, TabBar, fmtTime } from '../components/ui';
+import {
+  Timeline,
+  TimelineItem,
+  TimelineConnector,
+  TimelineTime,
+  TimelineDot,
+  TimelineContent,
+} from '../components/timeline';
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
 import { formatMilk, type MilkUnit, useUnitPrefs } from '../units';
@@ -154,7 +162,7 @@ export function TimelineScreen() {
       {/* Filter pills */}
       <div className="flex gap-1.5 overflow-x-auto px-4 pt-3 pb-1">
         {filterPills.map(([id, label, color, soft]) => (
-          <div key={id} onClick={() => setFilter(id)} className={cn('cursor-pointer whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold', soft === T.terracottaSoft ? 'bg-terracotta-soft text-terracotta' : soft === T.earthSoft ? 'bg-earth-soft text-earth' : soft === T.sageSoft ? 'bg-sage-soft text-sage' : soft === T.honeySoft ? 'bg-honey-soft text-honey' : 'bg-parchment text-ink', filter === id && (color === T.terracotta ? 'border-[1.5px] border-terracotta' : color === T.earth ? 'border-[1.5px] border-earth' : color === T.sage ? 'border-[1.5px] border-sage' : color === T.honey ? 'border-[1.5px] border-honey' : 'border-[1.5px] border-ink'))}>
+          <div key={id} onClick={() => setFilter(id)} className={cn('shrink-0 cursor-pointer whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold', soft === T.terracottaSoft ? 'bg-terracotta-soft text-terracotta' : soft === T.earthSoft ? 'bg-earth-soft text-earth' : soft === T.sageSoft ? 'bg-sage-soft text-sage' : soft === T.honeySoft ? 'bg-honey-soft text-honey' : 'bg-parchment text-ink', filter === id && (color === T.terracotta ? 'border-[1.5px] border-terracotta' : color === T.earth ? 'border-[1.5px] border-earth' : color === T.sage ? 'border-[1.5px] border-sage' : color === T.honey ? 'border-[1.5px] border-honey' : 'border-[1.5px] border-ink'))}>
             {label} {id !== 'all' ? `· ${events.filter(e => e.category === id).length}` : `· ${events.length}`}
           </div>
         ))}
@@ -170,8 +178,7 @@ export function TimelineScreen() {
           <div className="mt-1 text-[13px] text-ink-mute">Tap + to log an activity</div>
         </div>
       ) : (
-        <div className="relative flex-1 px-4 pt-3">
-          <div className="absolute top-3.5 bottom-0 left-9 w-0.5 bg-rule" />
+        <Timeline className="flex-1 px-4 pt-3">
           {filtered.map((e) => {
             const cfg = CAT_CONFIG[e.category as keyof typeof CAT_CONFIG];
             if (!cfg) return null;
@@ -179,16 +186,14 @@ export function TimelineScreen() {
             const isExpanded = expandedId === e.id;
             const canEdit = !!CATEGORY_ROUTE[e.category];
             return (
-              <div key={e.id} className="relative mb-2.5 flex gap-3">
-                <div className="w-10 shrink-0 pt-3 text-right">
-                  <div className="font-mono text-[11px] font-semibold text-ink-soft">{fmtTime(e.eventTime)}</div>
-                </div>
-                <div className="relative z-[2] shrink-0 pt-2.5">
+              <TimelineItem key={e.id}>
+                <TimelineConnector />
+                <TimelineTime>{fmtTime(e.eventTime)}</TimelineTime>
+                <TimelineDot>
                   <div className={cn('h-3.5 w-3.5 rounded-full border-[3px] border-cream', cfg.bgClass, isLive && (cfg.softClass === 'bg-terracotta-soft' ? 'shadow-[0_0_0_3px_#f1d8c7]' : cfg.softClass === 'bg-sage-soft' ? 'shadow-[0_0_0_3px_#dde5d5]' : ''))} />
-                </div>
-                <div className="flex-1 pb-1">
+                </TimelineDot>
+                <TimelineContent>
                   <Card pad={12} onClick={canEdit ? () => setExpandedId(isExpanded ? null : e.id) : undefined}>
-                    {/* Main row */}
                     <div className="flex items-center gap-2.5">
                       <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px]', cfg.softClass, cfg.colorClass)}>
                         <div className="h-[18px] w-[18px]">{cfg.icon}</div>
@@ -203,7 +208,6 @@ export function TimelineScreen() {
                       )}
                     </div>
 
-                    {/* Action row — shown when expanded */}
                     {isExpanded && (
                       <div className="mt-2.5 flex gap-2 border-t border-rule pt-2.5">
                         <button onClick={(ev) => { ev.stopPropagation(); handleEdit(e); }} className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[10px] border-[1.5px] border-terracotta bg-terracotta-soft py-2 font-sans text-[12.5px] font-bold text-terracotta">
@@ -220,11 +224,11 @@ export function TimelineScreen() {
                       </div>
                     )}
                   </Card>
-                </div>
-              </div>
+                </TimelineContent>
+              </TimelineItem>
             );
           })}
-        </div>
+        </Timeline>
       )}
 
       <TabBar />

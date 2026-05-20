@@ -28,6 +28,13 @@ export function createAuth(
         clientSecret: googleClientSecret,
       },
     },
+    account: {
+      accountLinking: {
+        enabled: true,
+        trustedProviders: ["google"],
+        requireLocalEmailVerified: false,
+      },
+    },
     secret,
     baseURL,
     trustedOrigins: ["http://localhost:5173", frontendUrl],
