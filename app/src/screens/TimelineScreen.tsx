@@ -138,6 +138,7 @@ export function TimelineScreen() {
     ['diaper', 'Diapers', T.earth, T.earthSoft],
     ['sleep', 'Sleep', T.sage, T.sageSoft],
     ['pumping', 'Pump', T.honey, T.honeySoft],
+    ['bath', 'Bath', T.sky, T.skySoft]
   ] as const;
 
   return (

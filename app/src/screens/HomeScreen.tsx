@@ -78,11 +78,11 @@ export function HomeScreen() {
   return (
     <div className="box-border flex min-h-full w-full flex-col bg-cream pt-[max(20px,env(safe-area-inset-top))] font-sans">
       {/* Header */}
-      <div className="flex items-center justify-between px-[22px] pt-2">
+      <div className="flex items-center justify-between px-5.5 pt-2">
         <div>
           <div className="text-[12.5px] font-semibold uppercase tracking-[0.5px] text-ink-mute">{dateStr}</div>
           <div className="mt-0.5 font-serif text-[30px] leading-[1.05] tracking-[-0.5px] text-ink">
-            Good {greeting},<br/><span className="italic text-terracotta">{firstName}</span>
+            Good {greeting},<span className="italic text-terracotta">{firstName}</span>
           </div>
         </div>
         <div className="flex flex-col items-end gap-1.5">
