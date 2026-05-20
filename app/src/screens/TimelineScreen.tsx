@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { T } from '../tokens';
-import { Card, Chip, TabBar, fmtTime } from '../components/ui';
+import { Card, Chip, TabBar, fmtTime, fmtDuration } from '../components/ui';
 import { ScrollArea } from '../components/scroll-area';
 import {
   Timeline,
@@ -33,14 +33,14 @@ const CAT_CONFIG = {
     return `${f.type} feed`;
   }, sub: (e: TimelineEvent, milkUnit: MilkUnit) => {
     const f = e as unknown as { durationSeconds?: number; amountMl?: number };
-    if (f.durationSeconds) return `${Math.floor(f.durationSeconds / 60)} min`;
+    if (f.durationSeconds) return fmtDuration(f.durationSeconds);
     if (f.amountMl) return formatMilk(f.amountMl, milkUnit);
     return '';
   }},
   sleep: { icon: I.sleep, color: T.sage, soft: T.sageSoft, colorClass: 'text-sage', bgClass: 'bg-sage', softClass: 'bg-sage-soft', label: () => 'Sleep', sub: (e: TimelineEvent) => {
     const s = e as unknown as { endedAt?: string; durationSeconds?: number };
     if (!s.endedAt) return 'still going';
-    if (s.durationSeconds) return `${Math.floor(s.durationSeconds / 60)} min`;
+    if (s.durationSeconds) return fmtDuration(s.durationSeconds);
     return '';
   }},
   pumping: { icon: I.pump, color: T.honey, soft: T.honeySoft, colorClass: 'text-honey', bgClass: 'bg-honey', softClass: 'bg-honey-soft', label: () => 'Pumping', sub: (e: TimelineEvent, milkUnit: MilkUnit) => {

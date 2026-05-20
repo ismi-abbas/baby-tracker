@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { T } from '../tokens';
-import { Card, Chip, SyncBadge, TabBar, fmtDuration, fmtTimeAgo } from '../components/ui';
+import { Card, Chip, TabBar, fmtDuration, fmtTimeAgo } from '../components/ui';
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
 import { formatMilk, useUnitPrefs } from '../units';
@@ -87,7 +87,6 @@ export function HomeScreen() {
         </div>
         <div className="flex flex-col items-end gap-1.5">
           <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-card bg-terracotta-soft font-serif text-lg font-semibold text-terracotta">{initial}</div>
-          <SyncBadge />
         </div>
       </div>
 

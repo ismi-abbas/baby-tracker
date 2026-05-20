@@ -4,9 +4,12 @@ import { BackBtn, Card, useNav, DateTimeField } from '../components/ui';
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
 import { useEditRecord } from '../hooks/useEditRecord';
-import { cmToDisplay, lengthDeltaToCm, gramsToDisplay, useUnitPrefs, weightDeltaToGrams } from '../units';
+import { cmToDisplay, gramsToDisplay, useUnitPrefs } from '../units';
 import type { GrowthEntry } from '../types';
 import { cn } from '../lib/utils';
+
+const G_PER_LB = 453.59237;
+const CM_PER_IN = 2.54;
 
 function toLocalDate(d: Date) {
   const p = (n: number) => String(n).padStart(2, '0');
@@ -18,9 +21,9 @@ export function GrowthEntryScreen() {
   const { baby, babyApi: api } = useBaby();
   const { prefs } = useUnitPrefs();
   const { editId, record: editRecord } = useEditRecord<GrowthEntry>(id => api.growth.get(id) as Promise<GrowthEntry>);
-  const [weightG, setWeightG] = useState(0);
-  const [lengthCm, setLengthCm] = useState(0);
-  const [headCm, setHeadCm] = useState(0);
+  const [weightStr, setWeightStr] = useState('');
+  const [lengthStr, setLengthStr] = useState('');
+  const [headStr, setHeadStr] = useState('');
   const [measuredOn, setMeasuredOn] = useState(() => toLocalDate(new Date()));
   const [visitType, setVisitType] = useState<'home' | 'doctor'>('home');
   const [notes, setNotes] = useState('');
@@ -28,9 +31,12 @@ export function GrowthEntryScreen() {
 
   useEffect(() => {
     if (!editRecord) return;
-    setWeightG(editRecord.weightG ?? 0);
-    setLengthCm(editRecord.lengthCm ?? 0);
-    setHeadCm(editRecord.headCm ?? 0);
+    const wG = editRecord.weightG ?? 0;
+    const lCm = editRecord.lengthCm ?? 0;
+    const hCm = editRecord.headCm ?? 0;
+    setWeightStr(wG ? gramsToDisplay(wG, prefs.weightUnit).toFixed(prefs.weightUnit === 'lb' ? 1 : 2) : '');
+    setLengthStr(lCm ? cmToDisplay(lCm, prefs.lengthUnit).toFixed(1) : '');
+    setHeadStr(hCm ? cmToDisplay(hCm, prefs.lengthUnit).toFixed(1) : '');
     setMeasuredOn(toLocalDate(new Date(editRecord.measuredAt)));
     if (editRecord.visitType) setVisitType(editRecord.visitType as 'home' | 'doctor');
     if (editRecord.notes) setNotes(editRecord.notes);
@@ -39,26 +45,46 @@ export function GrowthEntryScreen() {
   async function save() {
     setSaving(true);
     const measuredAt = new Date(measuredOn + 'T12:00:00').toISOString();
-    const payload = { weightG: weightG || null, lengthCm: lengthCm || null, headCm: headCm || null, visitType, notes: notes || null, loggedBy: 'You', measuredAt };
+    const wVal = parseFloat(weightStr);
+    const lVal = parseFloat(lengthStr);
+    const hVal = parseFloat(headStr);
+    const weightG = wVal > 0 ? Math.round(wVal * (prefs.weightUnit === 'lb' ? G_PER_LB : 1000)) : null;
+    const lengthCm = lVal > 0 ? Math.round(lVal * (prefs.lengthUnit === 'in' ? CM_PER_IN : 1) * 10) / 10 : null;
+    const headCm = hVal > 0 ? Math.round(hVal * (prefs.lengthUnit === 'in' ? CM_PER_IN : 1) * 10) / 10 : null;
+    const payload = { weightG, lengthCm, headCm, visitType, notes: notes || null, loggedBy: 'You', measuredAt };
     if (editId) await (api.growth.update(editId, payload) as Promise<unknown>).catch(() => {});
     else await (api.growth.create(payload) as Promise<unknown>).catch(() => {});
     setSaving(false); back();
   }
 
   function adjust(field: 'weight' | 'length' | 'head', delta: number) {
-    if (field === 'weight') setWeightG(v => Math.max(0, v + weightDeltaToGrams(delta, prefs.weightUnit)));
-    if (field === 'length') setLengthCm(v => Math.max(0, Math.round((v + lengthDeltaToCm(delta, prefs.lengthUnit)) * 10) / 10));
-    if (field === 'head') setHeadCm(v => Math.max(0, Math.round((v + lengthDeltaToCm(delta, prefs.lengthUnit)) * 10) / 10));
+    if (field === 'weight') {
+      setWeightStr(s => {
+        const next = Math.max(0, (parseFloat(s) || 0) + delta);
+        return next ? next.toFixed(prefs.weightUnit === 'lb' ? 1 : 2) : '';
+      });
+    }
+    if (field === 'length') {
+      setLengthStr(s => {
+        const next = Math.max(0, (parseFloat(s) || 0) + delta);
+        return next ? next.toFixed(1) : '';
+      });
+    }
+    if (field === 'head') {
+      setHeadStr(s => {
+        const next = Math.max(0, (parseFloat(s) || 0) + delta);
+        return next ? next.toFixed(1) : '';
+      });
+    }
   }
 
   const babyName = baby?.name?.split(' ')[0] ?? '…';
-
   const weightSteps = prefs.weightUnit === 'lb' ? [-0.5, -0.1, 0.1, 0.5] : [-0.1, -0.05, 0.05, 0.1];
   const lengthSteps = prefs.lengthUnit === 'in' ? [-1, -0.5, 0.5, 1] : [-1, -0.5, 0.5, 1];
   const metrics = [
-    { key: 'weight' as const, label: 'Weight', val: weightG ? gramsToDisplay(weightG, prefs.weightUnit).toFixed(prefs.weightUnit === 'lb' ? 1 : 2) : '—', unit: prefs.weightUnit, colorClass: 'text-rose', softClass: 'bg-rose-soft', positiveClass: 'border-rose bg-rose-soft text-rose', steps: weightSteps },
-    { key: 'length' as const, label: 'Length', val: lengthCm ? cmToDisplay(lengthCm, prefs.lengthUnit).toFixed(1) : '—', unit: prefs.lengthUnit, colorClass: 'text-sage', softClass: 'bg-sage-soft', positiveClass: 'border-sage bg-sage-soft text-sage', steps: lengthSteps },
-    { key: 'head' as const, label: 'Head', val: headCm ? cmToDisplay(headCm, prefs.lengthUnit).toFixed(1) : '—', unit: prefs.lengthUnit, colorClass: 'text-terracotta', softClass: 'bg-terracotta-soft', positiveClass: 'border-terracotta bg-terracotta-soft text-terracotta', steps: lengthSteps },
+    { key: 'weight' as const, label: 'Weight', str: weightStr, setStr: setWeightStr, unit: prefs.weightUnit, colorClass: 'text-rose', softClass: 'bg-rose-soft', positiveClass: 'border-rose bg-rose-soft text-rose', steps: weightSteps },
+    { key: 'length' as const, label: 'Length', str: lengthStr, setStr: setLengthStr, unit: prefs.lengthUnit, colorClass: 'text-sage', softClass: 'bg-sage-soft', positiveClass: 'border-sage bg-sage-soft text-sage', steps: lengthSteps },
+    { key: 'head' as const, label: 'Head', str: headStr, setStr: setHeadStr, unit: prefs.lengthUnit, colorClass: 'text-terracotta', softClass: 'bg-terracotta-soft', positiveClass: 'border-terracotta bg-terracotta-soft text-terracotta', steps: lengthSteps },
   ];
 
   return (
@@ -85,10 +111,20 @@ export function GrowthEntryScreen() {
         {metrics.map(r => (
           <Card key={r.key} pad={14}>
             <div className="flex items-center gap-3.5">
-              <div className={cn('flex h-[42px] w-[42px] items-center justify-center rounded-[14px]', r.softClass, r.colorClass)}><div className="h-5 w-5">{I.measure}</div></div>
-              <div className="flex-1">
+              <div className={cn('flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[14px]', r.softClass, r.colorClass)}><div className="h-5 w-5">{I.measure}</div></div>
+              <div className="min-w-0 flex-1">
                 <div className="text-[11.5px] font-semibold tracking-[0.5px] text-ink-mute uppercase">{r.label}</div>
-                <div className="mt-px flex items-baseline gap-1"><span className="font-serif text-[28px] font-medium tracking-[-0.5px] text-ink tabular-nums">{r.val}</span><span className="text-xs italic text-ink-mute">{r.unit}</span></div>
+                <div className="mt-px flex items-baseline gap-1">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={r.str}
+                    onChange={e => r.setStr(e.target.value)}
+                    placeholder="—"
+                    className="min-w-0 flex-1 border-none bg-transparent p-0 font-serif text-[28px] font-medium tracking-[-0.5px] text-ink tabular-nums outline-none placeholder:text-ink-mute"
+                  />
+                  <span className="shrink-0 text-xs italic text-ink-mute">{r.unit}</span>
+                </div>
               </div>
             </div>
             <div className="mt-3 flex gap-1.5">
@@ -98,8 +134,8 @@ export function GrowthEntryScreen() {
         ))}
       </div>
       <div className="px-4 pt-3"><Card pad={14}><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Visit notes or milestones…" className="min-h-[50px] w-full resize-none border-0 bg-transparent text-[13px] leading-[1.45] text-ink-soft outline-none" /></Card></div>
-      <div className="flex gap-2.5 px-4 pt-3.5">
-        <button onClick={save} disabled={saving || (!weightG && !lengthCm && !headCm)} className="inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-2xl border-0 bg-rose px-5 py-3.5 text-sm font-bold tracking-[0.2px] text-card">{saving ? 'Saving…' : editId ? 'Update measurement' : 'Save measurement'}</button>
+      <div className="flex gap-2.5 px-4 pt-3.5 pb-6">
+        <button onClick={save} disabled={saving || (!parseFloat(weightStr) && !parseFloat(lengthStr) && !parseFloat(headStr))} className="inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-2xl border-0 bg-rose px-5 py-3.5 text-sm font-bold tracking-[0.2px] text-card">{saving ? 'Saving…' : editId ? 'Update measurement' : 'Save measurement'}</button>
       </div>
     </div>
   );

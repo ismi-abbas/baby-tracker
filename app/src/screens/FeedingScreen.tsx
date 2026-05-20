@@ -7,7 +7,7 @@ import {
 import { I } from '../components/Icons';
 import { useBaby } from '../context/BabyContext';
 import { useEditRecord } from '../hooks/useEditRecord';
-import { formatMilk, milkDeltaToMl, mlToDisplay, useUnitPrefs } from '../units';
+import { formatMilk, milkDeltaToMl, mlToDisplay, useUnitPrefs, type MilkUnit } from '../units';
 import { cn } from '../lib/utils';
 import type { Feeding } from '../types';
 
@@ -39,7 +39,9 @@ export function FeedingScreen() {
   const [manualStart, setManualStart] = useState(() => toLocalDT(new Date()));
   const [manualEnd, setManualEnd] = useState(() => toLocalDT(new Date()));
   const [manualSide, setManualSide] = useState<Side>('left');
-  const [manualAmountMl, setManualAmountMl] = useState(90);
+  const [amountStr, setAmountStr] = useState(() =>
+    prefs.milkUnit === 'oz' ? mlToDisplay(90, 'oz').toFixed(1) : '90'
+  );
 
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
@@ -72,7 +74,11 @@ export function FeedingScreen() {
     setManualStart(toLocalDT(new Date(editRecord.startedAt)));
     setManualEnd(editRecord.endedAt ? toLocalDT(new Date(editRecord.endedAt)) : toLocalDT(new Date(editRecord.startedAt)));
     if (editRecord.side) setManualSide(editRecord.side as Side);
-    if (editRecord.amountMl) setManualAmountMl(editRecord.amountMl);
+    if (editRecord.amountMl) setAmountStr(
+      prefs.milkUnit === 'oz'
+        ? mlToDisplay(editRecord.amountMl, 'oz').toFixed(1)
+        : String(editRecord.amountMl)
+    );
     if (editRecord.notes) setNotes(editRecord.notes);
   }, [editRecord]);
 
@@ -84,7 +90,7 @@ export function FeedingScreen() {
         type: feedMode.toLowerCase(),
         side: feedMode === 'Breast' ? activeSide : null,
         durationSeconds: leftSec + rightSec,
-        amountMl: feedMode === 'Bottle' || feedMode === 'Formula' ? manualAmountMl : null,
+        amountMl: needsAmount ? (milkDeltaToMl(parseFloat(amountStr) || 0, prefs.milkUnit) || null) : null,
         startedAt: (startTime ?? new Date()).toISOString(),
         endedAt: new Date().toISOString(),
       };
@@ -97,7 +103,7 @@ export function FeedingScreen() {
         durationSeconds: feedMode !== 'Bottle' && feedMode !== 'Formula'
           ? Math.max(0, Math.round((end.getTime() - start.getTime()) / 1000))
           : null,
-        amountMl: feedMode === 'Bottle' || feedMode === 'Formula' ? manualAmountMl : null,
+        amountMl: needsAmount ? (milkDeltaToMl(parseFloat(amountStr) || 0, prefs.milkUnit) || null) : null,
         startedAt: start.toISOString(),
         endedAt: feedMode !== 'Bottle' && feedMode !== 'Formula' ? end.toISOString() : null,
       };
@@ -117,9 +123,14 @@ export function FeedingScreen() {
     `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
   const needsAmount = feedMode === 'Bottle' || feedMode === 'Formula';
   const amountSteps = prefs.milkUnit === 'oz' ? [-1, -0.5, 0.5, 1] : [-10, -5, 5, 10];
-  const amountDisplay = prefs.milkUnit === 'oz'
-    ? mlToDisplay(manualAmountMl, prefs.milkUnit).toFixed(1)
-    : String(manualAmountMl);
+  const amountMlVal = milkDeltaToMl(parseFloat(amountStr) || 0, prefs.milkUnit);
+
+  function adjustAmount(delta: number) {
+    setAmountStr(s => {
+      const next = Math.max(0, (parseFloat(s) || 0) + delta);
+      return (prefs.milkUnit as MilkUnit) === 'oz' ? next.toFixed(1) : String(Math.round(next));
+    });
+  }
 
   return (
     <div className="box-border flex min-h-full w-full flex-col bg-cream pt-[max(20px,env(safe-area-inset-top))] font-sans">
@@ -177,15 +188,25 @@ export function FeedingScreen() {
             <div className="px-4 pt-3">
               <Card pad={14}>
                 <div className="mb-2 text-[11px] font-bold tracking-[0.5px] text-ink-mute uppercase">Amount ({prefs.milkUnit})</div>
-                <div className="flex items-center justify-center gap-3">
-                  <div className="min-w-20 text-center font-serif text-4xl font-medium text-ink">{amountDisplay}</div>
+                <div className="flex flex-col items-center gap-2">
+                  <div className="flex items-baseline gap-1">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={amountStr}
+                      onChange={e => setAmountStr(e.target.value)}
+                      placeholder="0"
+                      className="w-20 border-none bg-transparent p-0 text-center font-serif text-4xl font-medium text-ink tabular-nums outline-none placeholder:text-ink-mute"
+                    />
+                    <span className="text-sm italic text-ink-mute">{prefs.milkUnit}</span>
+                  </div>
                   <div className="flex gap-1.5">
                     {amountSteps.map(d => (
-                      <button key={d} onClick={() => setManualAmountMl(v => Math.max(0, v + milkDeltaToMl(d, prefs.milkUnit)))} className="cursor-pointer rounded-[10px] border border-rule bg-card px-2.5 py-2 font-mono text-xs font-semibold text-ink">{d > 0 ? `+${d}` : d}</button>
+                      <button key={d} onClick={() => adjustAmount(d)} className="cursor-pointer rounded-[10px] border border-rule bg-card px-2.5 py-2 font-mono text-xs font-semibold text-ink">{d > 0 ? `+${d}` : d}</button>
                     ))}
                   </div>
                 </div>
-                {prefs.milkUnit === 'oz' && <div className="mt-1.5 text-center text-[11px] text-ink-mute">{formatMilk(manualAmountMl, 'ml')}</div>}
+                {prefs.milkUnit === 'oz' && amountMlVal > 0 && <div className="mt-1 text-center text-[11px] text-ink-mute">{formatMilk(amountMlVal, 'ml')}</div>}
               </Card>
             </div>
           )}
@@ -214,15 +235,25 @@ export function FeedingScreen() {
           {needsAmount && (
             <Card pad={14}>
               <div className="mb-2 text-[11px] font-bold tracking-[0.5px] text-ink-mute uppercase">Amount ({prefs.milkUnit})</div>
-              <div className="flex items-center justify-center gap-3">
-                <div className="min-w-20 text-center font-serif text-4xl font-medium text-ink">{amountDisplay}</div>
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex items-baseline gap-1">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={amountStr}
+                    onChange={e => setAmountStr(e.target.value)}
+                    placeholder="0"
+                    className="w-20 border-none bg-transparent p-0 text-center font-serif text-4xl font-medium text-ink tabular-nums outline-none placeholder:text-ink-mute"
+                  />
+                  <span className="text-sm italic text-ink-mute">{prefs.milkUnit}</span>
+                </div>
                 <div className="flex gap-1.5">
                   {amountSteps.map(d => (
-                    <button key={d} onClick={() => setManualAmountMl(v => Math.max(0, v + milkDeltaToMl(d, prefs.milkUnit)))} className="cursor-pointer rounded-[10px] border border-rule bg-card px-2.5 py-2 font-mono text-xs font-semibold text-ink">{d > 0 ? `+${d}` : d}</button>
+                    <button key={d} onClick={() => adjustAmount(d)} className="cursor-pointer rounded-[10px] border border-rule bg-card px-2.5 py-2 font-mono text-xs font-semibold text-ink">{d > 0 ? `+${d}` : d}</button>
                   ))}
                 </div>
               </div>
-              {prefs.milkUnit === 'oz' && <div className="mt-1.5 text-center text-[11px] text-ink-mute">{formatMilk(manualAmountMl, 'ml')}</div>}
+              {prefs.milkUnit === 'oz' && amountMlVal > 0 && <div className="mt-1 text-center text-[11px] text-ink-mute">{formatMilk(amountMlVal, 'ml')}</div>}
             </Card>
           )}
         </div>

@@ -76,13 +76,7 @@ export function ProfileScreen() {
       {/* Hero card */}
       <div className="px-4 pt-3">
         <div className="overflow-hidden rounded-[22px] bg-card shadow-card">
-          <div className="relative h-24 bg-[linear-gradient(135deg,#f1d8c7,#f5e2be)]">
-            <svg viewBox="0 0 400 96" preserveAspectRatio="none" width="100%" height="100%" className="absolute inset-0 opacity-40">
-              {Array.from({ length: 12 }).map((_, i) => (
-                <circle key={i} cx={20 + i * 35} cy={20 + (i % 3) * 25} r={2 + (i % 4)} fill={T.terracotta} opacity={0.3 + (i % 5) * 0.1} />
-              ))}
-            </svg>
-          </div>
+          <div className="h-24 bg-[linear-gradient(135deg,#f1d8c7,#f5e2be)]" />
           <div className="-mt-[34px] px-[18px] pb-[18px]">
             <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full border-4 border-card bg-card font-serif text-[30px] font-semibold text-terracotta shadow-card">{initial}</div>
             <div className="mt-2 font-serif text-[26px] tracking-[-0.3px] text-ink">{babyName}</div>
