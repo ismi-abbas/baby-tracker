@@ -124,6 +124,14 @@ export function TimelineScreen() {
     navigate({ to: to as never, search: { id: e.id } as never });
   }
 
+  function timeRange(e: TimelineEvent): string | null {
+    const startedAt = (e as { startedAt?: string }).startedAt;
+    const endedAt   = (e as { endedAt?: string }).endedAt;
+    if (!startedAt) return null;
+    const fmt = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return endedAt ? `${fmt(startedAt)} – ${fmt(endedAt)}` : `${fmt(startedAt)} →`;
+  }
+
   const filterPills = [
     ['all', 'All', T.ink, T.parchment],
     ['feeding', 'Feeds', T.terracotta, T.terracottaSoft],
@@ -203,6 +211,7 @@ export function TimelineScreen() {
                         <div className="min-w-0 flex-1">
                           <div className="truncate whitespace-nowrap text-[13px] font-bold text-ink">{cfg.label(e, prefs.milkUnit)}</div>
                           <div className="mt-px text-[11px] text-ink-mute">{cfg.sub(e, prefs.milkUnit)} · {(e as { loggedBy?: string }).loggedBy ?? 'You'}</div>
+                          {timeRange(e) && <div className="mt-0.5 font-mono text-[10px] text-ink-mute">{timeRange(e)}</div>}
                         </div>
                         {isLive && <Chip color={T.terracotta} soft={T.terracottaSoft}>● live</Chip>}
                         {canEdit && (
